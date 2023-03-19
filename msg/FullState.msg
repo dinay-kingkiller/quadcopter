@@ -1,0 +1,12 @@
+float32 x
+float32 y
+float32 z
+float32 a
+float32 b
+float32 c
+float32 diff_x
+float32 diff_y
+float32 diff_z
+float32 diff_a
+float32 diff_b
+float32 diff_c
