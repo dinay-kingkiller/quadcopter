@@ -50,6 +50,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   FullState.msg
+  IMU.msg
   Input.msg
   State.msg
 )
