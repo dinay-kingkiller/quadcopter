@@ -30,7 +30,6 @@
 /// \file model.cpp
 /// \brief A ROS node that models a quadcopter.
 ///
-/// This node provides
 
 #include "ros/ros.h"
 #include "quadcopter/FullState.h"
@@ -88,7 +87,7 @@ private:
     float mm02 = m_inertia * sin(state.a);
     float mm10 = m_inertia * sin(state.c) / 2.0;
     float mm11 = m_inertia * cos(state.c) / 2.0;
-    if (mm01==0.0 or mm10==0.0) {throw std::runtime_error("Division by zero detected.");}
+    assert(mm01!=0.0 and mm10!=0.0);
     float inv_det = - 1.0 / (mm01 * mm10);
     deriv.a = inv_det * (f0*mm11 - f1*mm01 - f2*mm02*mm11);
     deriv.b = inv_det * (-f0*mm10 + f1*mm00 + f2*mm02*mm10);
