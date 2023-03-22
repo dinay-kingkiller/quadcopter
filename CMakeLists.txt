@@ -104,7 +104,7 @@ generate_messages()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES quadcopter
-#  CATKIN_DEPENDS message_generation roscpp rospy
+  CATKIN_DEPENDS message_generation roscpp rospy
 #  DEPENDS system_lib
 )
 
@@ -115,19 +115,17 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/quadcopter.cpp
-# )
+add_library(model src/model.cc)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(model ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -147,9 +145,9 @@ add_dependencies(${PROJECT_NAME}_model
   ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}_model
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
