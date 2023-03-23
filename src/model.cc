@@ -126,7 +126,3 @@ void Model::update() {
   last_state.diff_c = deriv.diff_c * dt;
 }
 } // namespace quadcopter
-
-int main(int argc, char **argv) {
-  return 0;
-}
