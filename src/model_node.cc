@@ -30,17 +30,34 @@
 /// \file model_node.cc
 /// \brief A ROS node that models a quadcopter.
 
-#include "quadcopter/model.h"
 
 #include "ros/ros.h"
 
-#include "quadcopter/FullState.h"
-#include "quadcopter/IMU.h"
-#include "quadcopter/Input.h"
+#include "quadcopter/model.h"
+
+#include "quadcopter/Sensor.h"
+#include "quadcopter/Motor.h"
 #include "quadcopter/State.h"
 
-
-
 int main(int argc, char **argv) {
+  ros::init(argc, argv, "model");
+  ros::NodeHandle node;
+  float Mass, ArmLength, kGravity, kTorque, kForce;
+  node.getParam("Mass", Mass);
+  node.getParam("ArmLength", ArmLength);
+  node.getParam("kGravity", kGravity);
+  node.getParam("kForce", kForce);
+  node.getParam("kTorque", kTorque);
+  quadcopter::Model drone(Mass, ArmLength, kGravity, kTorque, kForce);
+  ros::Rate sensor_rate(1000);
+
+  ros::Publisher sensor_pub = node.advertise<quadcopter::Sensor>("sensor_output", 1000);
+  ros::Subscriber motor_sub = node.subscribe<quadcopter::Motor>("motor_input", 1000, &quadcopter::Model::move, &drone);
+
+  while (ros::ok()) {
+    quadcopter::Sensor sensor_msg = drone.sense();
+    sensor_pub.publish(sensor_msg);
+    sensor_rate.sleep();
+  }
   return 0;
 }

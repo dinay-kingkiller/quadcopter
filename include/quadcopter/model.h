@@ -28,7 +28,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// \file model.h
-/// \brief A ROS node that models a quadcopter.
+/// \brief A model of a quadcopter.
 ///
 
 #ifndef QUADCOPTER_MODEL_H_
@@ -37,32 +37,48 @@
 #include "ros/ros.h"
 
 #include "quadcopter/FullState.h"
-#include "quadcopter/IMU.h"
-#include "quadcopter/Input.h"
+#include "quadcopter/Motor.h"
+#include "quadcopter/Sensor.h"
 #include "quadcopter/State.h"
 
 
 namespace quadcopter {
 
 /// \class quadcopter::Model
-/// \brief
+/// \brief Models the physics of a quadcopter and provides sensor feedback.
 class Model {
-private:
-  quadcopter::FullState last_state;
-  quadcopter::Input last_input;
-  ros::Time last_time;
-  float mass;
-  float arm_length;
-  float k_gravity;
-  float k_torque;
-  float k_force;
-  quadcopter::FullState ode(quadcopter::FullState state, quadcopter::Input input);
-  quadcopter::Input add_motor_noise(quadcopter::Input clean);
-  quadcopter::IMU add_sensor_noise(quadcopter::IMU clean);
 public:
-  Model(float Mass, float ArmLength, float GAccel, float kTorque, float kForce,
-        quadcopter::FullState initial_state);
-  void update();
+  Model(float Mass, float ArmLength, float GAccel, float kForce, float kTorque);
+  /// \fn void quadcopter::Model::zero()
+  /// \brief Places the quadcopter back at the origin and restarts the clock.
+  void zero();
+  /// \fn void quadcopter::Model::move(Motor input)
+  /// \brief Sets the motor values to a new input.
+  void move(Motor input);
+  /// \fn Sensor quadcopter::Model::sense()
+  /// \brief Updates and measures the current state of the quadcopter.
+  ///
+  /// The model only updates when this is called. For long periods between calls the simulation
+  /// loses authenticity.
+  Sensor sense();
+private:
+  const float mass_;
+  const float arm_length_;
+  const float k_gravity_; 
+  const float k_torque_; /// torque constant of motors
+  const float k_force_; /// force constant of motors
+  ros::Time last_time_;
+  FullState last_state_;
+  Motor last_input_;
+  /// \fn FullState ode(FullState state, Motor input)
+  /// \brief Calculates the derivative of the quadcopter `state` 
+  FullState ode(FullState state, Motor input);
+  /// \fn FullState integrate_state(FullState old_state, FullState derivative, float diff_t)
+  /// \brief Combines the derivative with the old state to calculate the next state.
+  FullState integrate_state(FullState old_state, FullState derivative, ros::Time new_t);
+  /// \fn IMU measure_state(FullState state)
+  /// \brief Convert state into an IMU message
+  Sensor measure_state(FullState state);
 };
 } //namespace quadcopter
 

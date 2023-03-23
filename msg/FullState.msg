@@ -1,3 +1,4 @@
+time t
 float32 x
 float32 y
 float32 z
@@ -10,3 +11,9 @@ float32 diff_z
 float32 diff_a
 float32 diff_b
 float32 diff_c
+float32 ddiff_x
+float32 ddiff_y
+float32 ddiff_z
+float32 ddiff_a
+float32 ddiff_b
+float32 ddiff_c
