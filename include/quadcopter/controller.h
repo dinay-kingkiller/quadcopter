@@ -26,3 +26,19 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+/// \file controller.h
+///
+
+#include "quadcopter/Motor.h"
+#include "quadcopter/State.h"
+
+namespace quadcopter
+{
+class Controller
+{
+public:
+  Motor stabilize(State current);
+  Motor go_to(State current, State goal);
+}
+}
