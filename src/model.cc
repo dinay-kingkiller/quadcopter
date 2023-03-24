@@ -27,7 +27,6 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "quadcopter/model.h"
 
 #include "ros/ros.h"
@@ -37,25 +36,26 @@
 #include "quadcopter/Sensor.h"
 #include "quadcopter/State.h"
 
-namespace quadcopter {
-
+namespace quadcopter
+{
 Model::Model(float Mass, float ArmLength, float GAccel, float kForce, float kTorque)
   : mass_(Mass),
     arm_length_(ArmLength),
     k_gravity_(GAccel),
     k_torque_(kTorque),
-    k_force_(kForce) {
+    k_force_(kForce)
+{
   Model::zero();
 }
-
-Sensor Model::sense() {
-  FullState deriv = Model::ode(last_state_, last_input_);
+Sensor Model::sense()
+{
+  FullState deriv = Model::ODE(last_state_, last_input_);
   // Update the state since last sense.
-  last_state_ = Model::integrate_state(last_state_, deriv, ros::Time::now());
-  return Model::measure_state(last_state_);
+  last_state_ = Model::integrateState(last_state_, deriv, ros::Time::now());
+  return Model::measureState(last_state_);
 }
-
-void Model::zero() {
+void Model::zero()
+{
   last_state_.t = ros::Time::now();
   last_state_.x = 0.0;
   last_state_.y = 0.0;
@@ -74,10 +74,9 @@ void Model::zero() {
   last_input_.back = 0.0;
   last_input_.left = 0.0;
 }
-  
 void Model::move(Motor input) {last_input_ = input;}
-  
-FullState Model::ode(FullState state, Motor input) {
+FullState Model::ODE(const FullState &state, const Motor &input) const
+{
   // note that deriv.t is not defined.
   FullState deriv;
   deriv.x = state.diff_x;
@@ -111,17 +110,19 @@ FullState Model::ode(FullState state, Motor input) {
   float mm02 = m_inertia * sin(state.a);
   float mm10 = m_inertia * sin(state.c) / 2.0;
   float mm11 = m_inertia * cos(state.c) / 2.0;
-  assert(mm01!=0.0 and mm10!=0.0); // check for division by zero.
+  // check for division by zero
+  ROS_ASSERT_MSG(mm01 != 0.0, "Division by zero. mm01 = %f", mm01);
+  ROS_ASSERT_MSG(mm10 != 0.0, "Division by zero. mm10 = %f", mm10);
   float inv_det = - 1.0 / (mm01 * mm10);
   deriv.a = inv_det * (f0*mm11 - f1*mm01 - f2*mm02*mm11);
   deriv.b = inv_det * (-f0*mm10 + f1*mm00 + f2*mm02*mm10);
   deriv.c = inv_det * f2 * (mm00*mm11-mm01*mm10);
   return deriv;
 }
-  
-
-
-FullState Model::integrate_state(FullState old_state, FullState change, ros::Time new_t) {
+FullState Model::integrateState(const FullState &old_state,
+				const FullState &change,
+				const ros::Time &new_t) const
+{
   FullState new_state;
   new_state.t = new_t;
   float dt = new_state.t.toSec() - old_state.t.toSec();
@@ -143,10 +144,10 @@ FullState Model::integrate_state(FullState old_state, FullState change, ros::Tim
   new_state.ddiff_a = change.diff_a;
   new_state.ddiff_b = change.diff_b;
   new_state.ddiff_c = change.diff_c;
+  return new_state;
 }
-    
-
-Sensor Model::measure_state(FullState state) {
+Sensor Model::measureState(const FullState state) const
+{
   Sensor sensor;
   sensor.accel_x = (1+state.ddiff_x) * sin(state.a)
     * sin(state.b) * cos(state.c)
@@ -163,6 +164,5 @@ Sensor Model::measure_state(FullState state) {
     + state.diff_a * sin(state.a) * sin(state.c)
     + state.diff_c;
   return sensor;
-}
-  
+}  
 } // namespace quadcopter

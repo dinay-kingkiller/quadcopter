@@ -187,6 +187,11 @@ target_link_libraries(${PROJECT_NAME}_model_node model ${catkin_LIBRARIES})
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
+###################
+## Documentation ##
+###################
+# add_doxygen()
+
 #############
 ## Testing ##
 #############

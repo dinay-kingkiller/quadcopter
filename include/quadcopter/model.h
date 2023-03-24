@@ -28,8 +28,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// \file model.h
-/// \brief A model of a quadcopter.
+/// \brief A quadcopter model
 ///
+/// Provides a class `quadcopter` that for simulating the physics of a quadcopter and providing
+/// sensor feedback.
 
 #ifndef QUADCOPTER_MODEL_H_
 #define QUADCOPTER_MODEL_H_
@@ -42,11 +44,12 @@
 #include "quadcopter/State.h"
 
 
-namespace quadcopter {
-
+namespace quadcopter
+{
 /// \class quadcopter::Model
 /// \brief Models the physics of a quadcopter and provides sensor feedback.
-class Model {
+class Model
+{
 public:
   Model(float Mass, float ArmLength, float GAccel, float kForce, float kTorque);
   /// \fn void quadcopter::Model::zero()
@@ -70,15 +73,17 @@ private:
   ros::Time last_time_;
   FullState last_state_;
   Motor last_input_;
-  /// \fn FullState ode(FullState state, Motor input)
+  /// \fn FullState ODE(FullState state, Motor input)
   /// \brief Calculates the derivative of the quadcopter `state` 
-  FullState ode(FullState state, Motor input);
-  /// \fn FullState integrate_state(FullState old_state, FullState derivative, float diff_t)
+  FullState ODE(const FullState &state, const Motor &input) const;
+  /// \fn FullState integrateState(FullState old_state, FullState derivative, float diff_t)
   /// \brief Combines the derivative with the old state to calculate the next state.
-  FullState integrate_state(FullState old_state, FullState derivative, ros::Time new_t);
-  /// \fn IMU measure_state(FullState state)
+  FullState integrateState(const FullState &old_state,
+			   const FullState &derivative,
+			   const ros::Time &new_t) const;
+  /// \fn IMU measureState(FullState state)
   /// \brief Convert state into an IMU message
-  Sensor measure_state(FullState state);
+  Sensor measureState(const FullState state) const;
 };
 } //namespace quadcopter
 
