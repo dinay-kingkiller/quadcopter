@@ -61,11 +61,11 @@ The rotation matrices also collect the dot products to push final calculations d
   \end{pmatrix}
 \end{equation}
 
-The rotation of the quadcopter can be described by a composition of three rotations: from a Newtonian frame $N$ to $A$, by an angle $a$ around their common $z$ axis (the yaw); from intermediate frames $A$ to $B$, by angle $b$ around their common $y$ axis (the roll); and from $B$ to the quadcopter body frame $C$, by angle $c$ around their common $z$ axis (the pitch). The angles and bases are chosen to make the angular velocities positive.
+The rotation of the quadcopter can be described by a composition of three rotations: from a Newtonian frame $N$ to $A$, by an angle $a$ around their common $x$ axis (the \emph{roll}); from intermediate frames $A$ to $B$, by angle $b$ around their common $y$ axis (the \emph{pitch}); and from $B$ to the quadcopter body frame $C$, by angle $c$ around their common $z$ axis (the \emph{yaw}). The angles and bases are chosen to make the angular velocities positive. On the quadcopter frame $\mathbf{\hat{c}}_x$ points to the front motor, $\mathbf{\hat{c}}_y$ points to the left motor, and $\mathbf{\hat{c}}_z$ is the cross product of the two.
 \begin{eqnarray}
-  {_\mathrm{N}\boldsymbol\omega_\mathrm{A}} =& \dot{a} \mathbf{\hat{n}}_x &= \dot{a} \mathbf{\hat{a}}_x\\
+  {_\mathrm{N}\boldsymbol\omega_\mathrm{A}} =& \dot{a} \mathbf{\hat{n}}_x &= \dot{a} \mathbf{\hat{a}}_x \label{ARotVel}\\
   {_\mathrm{A}\boldsymbol\omega_\mathrm{B}} =& \dot{b} \mathbf{\hat{a}}_y &= \dot{b} \mathbf{\hat{b}}_y\\
-  {_\mathrm{B}\boldsymbol\omega_\mathrm{C}} =& \dot{c} \mathbf{\hat{b}}_z &= \dot{c} \mathbf{\hat{c}}_z
+  {_\mathrm{B}\boldsymbol\omega_\mathrm{C}} =& \dot{c} \mathbf{\hat{b}}_z &= \dot{c} \mathbf{\hat{c}}_z \label{CRotVel}
 \end{eqnarray}
 
 Using the notation of the rotation matrices above, the composition of rotation matrices is the matrix product.
@@ -112,22 +112,6 @@ The important combinations of dot products can be found in tables \ref{InertialT
   \end{tabular} \label{RobotTransforms}
 \end{table}
 
-The angular velocity is the composition of the simple rotations.
-\begin{equation}
-  {_\mathrm{N}\boldsymbol\omega_\mathrm{C}} = \dot{a} \mathbf{\hat{n}}_x
-  + \dot{b} \mathbf{\hat{a}}_y
-  + \dot{c} \mathbf{\hat{b}}_z
-\end{equation}
-
-The angular acceleration (in the inertial frame) can be found with some manipulation of derivatives in reference frames.
-\begin{eqnarray}
-  {_\mathrm{N}\boldsymbol\alpha_\mathrm{C}} &=& \frac{^\mathrm{N}\mathrm{d}}{\mathrm{d}t} {_\mathrm{N}\boldsymbol\omega_\mathrm{C}} \nonumber\\
-  &=& \frac{^\mathrm{N}\mathrm{d}}{\mathrm{d}t} \dot{a} \mathbf{\hat{n}}_x + \frac{^\mathrm{A}\mathrm{d}}{\mathrm{d}t} \dot{b} \mathbf{a}_y + {_\mathrm{N}\boldsymbol\omega_\mathrm{A}} \times \dot{b} \mathbf{\hat{a}}_y\nonumber\\
-  && + \frac{^\mathrm{B}\mathrm{d}}{\mathrm{d} t} \dot{c} \mathbf{\hat{b}}_z + {_\mathrm{N}\boldsymbol\omega_\mathrm{B}} \times \dot{c} \mathbf{\hat{b}}_z \nonumber\\
-  &=& \ddot{a}\mathbf{\hat{n}}_x + \ddot{b} \mathbf{\hat{a}}_y + \ddot{c} \mathbf{\hat{c}}_z\nonumber\\
-  &&+\dot{a}\dot{b}\mathbf{\hat{a}}_z + \dot{b}\dot{c} \mathbf{\hat{b}}_x + \dot{a}\dot{c} \left(\mathbf{\hat{n}}_x \times \mathbf{\hat{c}}_z\right) 
-\end{eqnarray}
-
 \subsection{Linear Equations of Motion}
 If you choose the right reference frames the linear equations of motion are easy to express. First, the motion of the quadcopter from its origin point is defined simply:
 \begin{eqnarray}
@@ -138,15 +122,103 @@ If you choose the right reference frames the linear equations of motion are easy
 
 For our model we assume each motor puts out a force proportional to its square. If we let $m$ be the total mass of the robot and $k$ be the proportionality constant:
 \begin{equation}
-  m{_\mathrm{N}\mathbf{a}_c} = k \left(\omega_f^2 + \omega_r^2 + \omega_b^2 + \omega_l^2\right) \mathbf{\hat{c}}_y - mg \mathbf{\hat{n}}_y
+  m{_\mathrm{N}\mathbf{a}_c} = k \left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right) \mathbf{\hat{c}}_y - mg \mathbf{\hat{n}}_y
 \end{equation}
-Where $f$, $r$, $b$, and $l$ stand for the front, right, back and left motors respectively. Expressed in the inertial frame $N$ the equations of motion are:
+Where $f$, $l$, $b$, and $r$ stand for the front, right, back and left motors respectively. Expressed in the inertial frame $N$ the equations of motion are:
 \begin{eqnarray}
   \ddot{x} &=& \frac{k}{m} \Omega \cos b \sin c \\
   \ddot{y} &=& \frac{k}{m} \Omega \cos a \cos c + \frac{k}{m} \Omega \sin a \sin b \sin c - g\\
   \ddot{z} &=& \frac{k}{m} \Omega \sin a \cos c - \frac{k}{m} \Omega \cos a \sin b \sin c 
 \end{eqnarray}
 where $\Omega$ is the sum of the squares of the motor inputs.
+
+
+
+\section{Rotational Momentum}
+Supposing that most of the mass of the quadcopter is in the motors, the inertia dyadics for the four motors is:
+\begin{eqnarray}
+  \mathbf{I}^{f/c} &=& \frac{mL^2}{4} \mathbf{\hat{c}}_y\mathbf{\hat{c}}_y + \frac{mL^2}{4} \mathbf{\hat{c}}_z \mathbf{\hat{c}}_z \\
+  \mathbf{I}^{l/c} &=& \frac{mL^2}{4} \mathbf{\hat{c}}_x\mathbf{\hat{c}}_x + \frac{mL^2}{4} \mathbf{\hat{c}}_z \mathbf{\hat{c}}_z \\
+  \mathbf{I}^{b/c} &=& \frac{mL^2}{4} \mathbf{\hat{c}}_y\mathbf{\hat{c}}_y + \frac{mL^2}{4} \mathbf{\hat{c}}_z \mathbf{\hat{c}}_z \\
+  \mathbf{I}^{r/c} &=& \frac{mL^2}{4} \mathbf{\hat{c}}_x\mathbf{\hat{c}}_x + \frac{mL^2}{4} \mathbf{\hat{c}}_z \mathbf{\hat{c}}_z
+\end{eqnarray}
+
+The total inertial dyadic of the robot is then
+\begin{equation}
+  \mathbf{I}^{R/c} = \frac{mL^2}{2} \left(\mathbf{\hat{c}}_x\mathbf{\hat{c}}_x + \mathbf{\hat{c}}_y\mathbf{\hat{c}}_y + 2 \mathbf{\hat{c}}_z\mathbf{\hat{c}}_z\right)
+\end{equation}
+
+The angular velocity is the compositions of simple velocities given in equations \ref{ARotVel}-\ref{CRotVel}.
+\begin{equation}
+  {_\mathrm{N}\boldsymbol\omega_C} = \dot{a}\mathbf{\hat{a}}_x + \dot{b} \mathbf{\hat{b}}_y + \dot{c} \mathbf{\hat{c}}_z
+\end{equation}
+
+And the angular momentum is the dot product of the two
+\begin{eqnarray}
+  {^\mathrm{N}\mathbf{H}^{R/c}} &=& \mathbf{I}^{R/c} \cdot {_\mathrm{N}\boldsymbol\omega_\mathrm{C}}\nonumber\\
+  &=&\frac{mL^2}{4}\left(\dot{a} \cos b \cos c - \dot{b} \sin c\right) \mathbf{\hat{c}}_x\nonumber\\
+  &&+\frac{mL^2}{4}\left(\dot{a} \cos b \sin c + \dot{b} \cos c\right) \mathbf{\hat{c}}_y\nonumber\\
+  &&+\frac{mL^2}{4}\left(\dot{a}\sin b + 2\dot{c}\right) \mathbf{\hat{c}}_z
+\end{eqnarray}
+
+
+The angular acceleration (in the inertial frame) can be found with some manipulation of derivatives in reference frames.
+\begin{eqnarray}
+  {_\mathrm{N}\boldsymbol\alpha_\mathrm{C}} &=& \frac{^\mathrm{N}\mathrm{d}}{\mathrm{d}t} {_\mathrm{N}\boldsymbol\omega_\mathrm{C}} \nonumber\\
+  &=& \frac{^\mathrm{N}\mathrm{d}}{\mathrm{d}t} \dot{a} \mathbf{\hat{n}}_x + \frac{^\mathrm{A}\mathrm{d}}{\mathrm{d}t} \dot{b} \mathbf{a}_y + {_\mathrm{N}\boldsymbol\omega_\mathrm{A}} \times \dot{b} \mathbf{\hat{a}}_y\nonumber\\
+  && + \frac{^\mathrm{B}\mathrm{d}}{\mathrm{d} t} \dot{c} \mathbf{\hat{b}}_z + {_\mathrm{N}\boldsymbol\omega_\mathrm{B}} \times \dot{c} \mathbf{\hat{b}}_z \nonumber\\
+  &=& \ddot{a}\mathbf{\hat{n}}_x + \ddot{b} \mathbf{\hat{a}}_y + \ddot{c} \mathbf{\hat{c}}_z\nonumber\\
+  &&+\dot{a}\dot{b}\mathbf{\hat{a}}_z + \dot{b}\dot{c} \mathbf{\hat{b}}_x + \dot{a}\dot{c} \left(\mathbf{\hat{n}}_x \times \mathbf{\hat{c}}_z\right) 
+\end{eqnarray}
+
+The moment from the reference frame $\mathbf{M}^* = \mathbf{I}\cdot \boldsymbol\alpha + \boldsymbol\omega\times \mathbf{H}$ was calculated with a script
+\begin{eqnarray}
+  \mathbf{M}^* \cdot \mathbf{\hat{c}}_x &=& \ddot{a}\cos b\cos c + \ddot{b}\sin c- \dot{a}\dot{b}\sin b\cos c\nonumber\\
+  &&- \dot{a}\dot{c}\sin c\cos b + \dot{b}\dot{c}\cos c\\
+  \mathbf{M}^* \cdot \mathbf{\hat{c}}_y &=& - \ddot{a}\sin c\cos b + \ddot{b}\cos c+\dot{a}\dot{b}\sin b\sin c\nonumber\\
+  &&- \dot{a}\dot{c}\cos b\cos c - \dot{b}\dot{c}\sin c \\
+  \mathbf{M}^* \cdot \mathbf{\hat{c}}_z &=& \ddot{a} \sin b + \ddot{c} +\dot{a} \dot{b} \cos b
+\end{eqnarray}
+
+\begin{equation}
+  \mathrm{J}
+  \begin{pmatrix}
+    \ddot{a}\\
+    \ddot{b}\\
+    \ddot{c}
+  \end{pmatrix} = \mathrm{f}
+\end{equation}
+\begin{equation}
+  \mathrm{J} = 
+  \begin{pmatrix}
+    \cos b \cos c & \sin c & 0 \\
+    - \cos b \sin c & \cos c & 0 \\
+    \sin b & 0 & 1
+  \end{pmatrix}
+\end{equation}
+
+\begin{equation}
+  \left|\mathrm{J}\right| = \cos b \cos c \cos c + \cos b \sin c \sin c = \cos b
+\end{equation}
+
+\begin{eqnarray}
+  \mathrm{J}^{-1} &=& \frac{1}{\cos b}
+  \begin{pmatrix}
+    \cos b \cos c & -\cos b \sin c& \sin b \\
+    \sin c & \cos c & 0 \\
+    0 & 0 & 1
+  \end{pmatrix}\nonumber\\
+  &=&
+  \begin{pmatrix}
+    \cos c & -\sin c& \tan b \\
+    \sec b\sin c & \sec b\cos c & 0 \\
+    0 & 0 & 1
+  \end{pmatrix}
+\end{eqnarray}
+
+
+
+
 
 % \section*{Acknowledgments}
 
