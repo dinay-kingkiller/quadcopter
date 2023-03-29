@@ -180,83 +180,48 @@ The moment from the reference frame $\mathbf{M}^* = \mathbf{I}\cdot \boldsymbol\
   \mathbf{M}^* \cdot \mathbf{\hat{c}}_z &=& \ddot{a} \sin b + \ddot{c} +\dot{a} \dot{b} \cos b
 \end{eqnarray}
 
+\begin{equation}
+  \mathrm{J}
+  \begin{pmatrix}
+    \ddot{a}\\
+    \ddot{b}\\
+    \ddot{c}
+  \end{pmatrix} = \mathrm{f}
+\end{equation}
+\begin{equation}
+  \mathrm{J} = 
+  \begin{pmatrix}
+    \cos b \cos c & \sin c & 0 \\
+    - \cos b \sin c & \cos c & 0 \\
+    \sin b & 0 & 1
+  \end{pmatrix}
+\end{equation}
+
+\begin{equation}
+  \left|\mathrm{J}\right| = \cos b \cos c \cos c + \cos b \sin c \sin c = \cos b
+\end{equation}
+
+\begin{eqnarray}
+  \mathrm{J}^{-1} &=& \frac{1}{\cos b}
+  \begin{pmatrix}
+    \cos b \cos c & -\cos b \sin c& \sin b \\
+    \sin c & \cos c & 0 \\
+    0 & 0 & 1
+  \end{pmatrix}\nonumber\\
+  &=&
+  \begin{pmatrix}
+    \cos c & -\sin c& \tan b \\
+    \sec b\sin c & \sec b\cos c & 0 \\
+    0 & 0 & 1
+  \end{pmatrix}
+\end{eqnarray}
+
+
+
 
 
 % \section*{Acknowledgments}
 
-\appendices
-\section*{Quaternion Definition}
-Quadcopters rotate. And flip. Sometimes they even hover. In order to do any of these things, the rotation of the quadcopter \emph{must} be tracked. A great way for tracking rotations is unit quaternions. This section covers the basic algebra the quaternion ring $\left(\mathbb{H}, +, \otimes\right)$.
-A quaternion is a member of a 4-dimensional vector space
-\begin{equation}
-  \begin{pmatrix}
-    p_0 \\
-    p_1 \\
-    p_2 \\
-    p_3
-  \end{pmatrix} +
-  \begin{pmatrix}
-    q_0 \\
-    q_1 \\
-    q_2 \\
-    q_3
-  \end{pmatrix} =
-  \begin{pmatrix}
-    p_0 + q_0 \\
-    p_1 + q_1 \\
-    p_2 + q_2 \\
-    p_3 + q_3
-  \end{pmatrix}
-\end{equation}
-Multiplication is more complex
-\begin{equation}
- \begin{pmatrix}
-    p_0 \\
-    p_1 \\
-    p_2 \\
-    p_3
-  \end{pmatrix} \otimes 
-  \begin{pmatrix}
-    q_0 \\
-    q_1 \\
-    q_2 \\
-    q_3
-  \end{pmatrix} =
-  \begin{pmatrix}
-    p_0q_0 - p_1q_1 - p_2q_2 - p_3q_3 \\
-    p_0q_1 + p_1q_0 + p_2q_3 - p_3q_2 \\
-    p_0q_2 - p_1q_3 + p_2q_0 + p_3q_1 \\
-    p_0q_3 + p_1q_2 - p_2q_1 + p_3q_0
-  \end{pmatrix}
-\end{equation}
-Please note, quaternion multiplication is not commutative. Some other algebraic properties:
-Every scalar can be expressed as a quaternion $(s, 0, 0, 0)$ and every (3-)vector can be a quaternion $(0, v1, v2, v3)$. The 0-quaternion $(0, 0, 0, 0)$ is the additive identity and the 1-quaternion the multiplicative identity $(1, 0, 0, 0)$. The conjugate of a quaternion has inverted signs on the vector components. $q^*=(q0, q1, q2, q3)^*=(q0, -q1, -q2, -q3)$. The norm of a quaternion is the square root of the components, or the square of the quaternion multiplied by its conjugate (if we treat a purely scalar quaternion as a scalar).
-\begin{equation}
-  \|q\| = \sqrt{q\otimes q^*} = \sqrt{q_0^2+q_1^2+q_2^2+q_3^2}
-\end{equation}
-Every quaternion has an inverse $q^{-1}$ such that $q\otimes q^{-1}=1=q^{-1}\otimes q$. The inverse is $q^{-1}=q^*/\|q\|$. A quaternion with norm equal to one is called a unit quaternion, or versor. The quaternions covered outside this appendix can be considered unit quaternions. The $\otimes$ will be omitted too. We've seen that quaternion arithmetic can be applied to scalars and vectors. Pure vector multiplication notation will remain $\mathbf{u}\cdot\mathbf{v}$ and $\mathbf{u}\times\mathbf{v}$ for clarification, despite these also being quaternion operations.
-
-\subsection{Quaternion Kinematics}
-The ring of unti quaternions can be used to describe rotations in space. This quaternion is expressed by the following
-\begin{equation}
-  q = \exp\left(\frac{\theta}{2}\hat{\mathbf{u}}\right) = \cos\left(\frac{\theta}{2}\right) + \hat{\mathbf{u}} \sin\left( \frac{\theta}{2}\right)
-\end{equation}
-where $\hat{\mathbf{u}}$ is a unit vector axis of rotation and $\theta$ is the angle it rotated.
-
-Quaternion rotation from angular velocity
-\begin{equation}
-  \dot{q} = \frac{1}{2} q\boldsymbol\omega
-  \end{equation}
-
-Linear interpolation
-\begin{equation}
-  q_{k+1} = \frac{1}{2}q_k\boldsymbol\omega\Delta t + q_k 
-\end{equation}
-
-Spherical interpolation?
-\begin{equation}
-  q_{k+1} = \exp\left(\frac{1}{2} \boldsymbol\omega\Delta t\right)q_k
-\end{equation}
 
 
 %{\appendix[Proof of Zonklar Equations]
