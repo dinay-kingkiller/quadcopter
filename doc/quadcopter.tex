@@ -237,7 +237,13 @@ Every scalar can be expressed as a quaternion $(s, 0, 0, 0)$ and every (3-)vecto
 Every quaternion has an inverse $q^{-1}$ such that $q\otimes q^{-1}=1=q^{-1}\otimes q$. The inverse is $q^{-1}=q^*/\|q\|$. A quaternion with norm equal to one is called a unit quaternion, or versor. The quaternions covered outside this appendix can be considered unit quaternions. The $\otimes$ will be omitted too. We've seen that quaternion arithmetic can be applied to scalars and vectors. Pure vector multiplication notation will remain $\mathbf{u}\cdot\mathbf{v}$ and $\mathbf{u}\times\mathbf{v}$ for clarification, despite these also being quaternion operations.
 
 \subsection{Quaternion Kinematics}
-The ring of unti quaternions can be used to describe rotations in space. This quaternion is expressed by the following
+A unit quaternion can be used to describe a rotation between bases. A vector described in unit basis $A$ would be notated $^A\mathbf{v}$. The quaternion $^Aq^B$ transforms $^A\mathbf{v}$ to $^B\mathbf{v}$ by the following formula:
+\begin{equation}
+  {^B\mathbf{v}} = {^Aq^B} {^A\mathbf{v}} {^Aq^B^*}
+\end{equation}
+By pre- and post-multiplying quaternion conjugates to invert the rotation ${^Aq^*^B}{^B\mathbf{v}}{^Aq^B}={^A\mathbf{v}}$, we see that the inverse of the rotation is just the conjugate.
+
+By Euler's rotation theorem, every rotation in 3-space can be described by a rotation axis and angle. The unit quaternion ring can be used to describe these rotations in the following way
 \begin{equation}
   q = \exp\left(\frac{\theta}{2}\hat{\mathbf{u}}\right) = \cos\left(\frac{\theta}{2}\right) + \hat{\mathbf{u}} \sin\left( \frac{\theta}{2}\right)
 \end{equation}
