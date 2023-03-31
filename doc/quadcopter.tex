@@ -23,13 +23,34 @@
 %\end{abstract}
 
 \section{Introduction}
-\IEEEPARstart{T}{he} \texttt{quadcopter} package is filled with obtuse and often confusing code derived from various physics equations and mathematical formulas. This paper hopes to bridge the gap between quadcopter theory and the \texttt{src} files included. This paper can also be used as a reference for later expantion of this package.
+\IEEEPARstart{T}{he} \texttt{quadcopter} package is filled with obtuse and often confusing code derived from various physics equations and mathematical formulas. This paper hopes to bridge the gap between quadcopter theory and the \texttt{src} files included. This paper can also be used as a reference for later expansion of this package.
 
 \section{The Model Node}
 While an actual quadcopter would be helpful, a simulation is the next best thing. The model node simulates the physics of a quadcopter. The physics in this section also provide insight on how motor input and sensor output behave.
 
 \subsection{Rotational Kinetics}
-The rotation matrices (orthogonal transforms between bases) and their compositions come in handy for later calculations and can be found in the appendix. Throughout this paper, I use notation of the sum of scaled unit vectors (versors), but coding is better described as \texttt{float}s. The dot product of vectors provides these scalaras. The rotation matrices provide a way to move between these \texttt{array}s of \texttt{float}s. For example, consider the rotation matrix from basis $A$ to $B$.
+
+Quaternions are integral in understanding the implementation of the model node. Firstly, a vector in the inertial frame $N$ can be transformed and expressed in the robot frame $R$ by the quaternion $\mathrm{q}$:
+\begin{equation}
+	\mathbf{v}^R = \mathrm{q} \mathbf{v}^N \mathrm{q}^*
+\end{equation}
+
+That quaternion derivative can be updated via the angular velocity from robot frame to inertial frame $\boldsymbol\omega$ via
+\begin{equation}
+	\mathrm{\dot{q}} = \frac{1}{2} \boldsymbol\omega \mathrm{q}
+\end{equation}
+
+Integrating over the unit 4-sphere:
+\begin{equation}
+	\mathrm{q}[k+1] = \exp\left(\frac{1}{2}\boldsymbol\omega[k] \Delta t\right) \mathrm{q}[k]
+\end{equation}
+
+\begin{eqnarray}
+	\mathrm{q}_s = \cos\left(\frac{\left|\boldsymbol\omega\right|\Delta t}{2}\right)\nonumber\\
+	\mathrm{q}_v = \boldsymbol\omega \sin\left(\frac{\left|\boldsymbol\omega\|\Delta t}{2}\right) \nonumber
+\end{eqnarray}
+
+Throughout this paper, I use notation of the sum of scaled unit vectors (versors), but coding is better described as \texttt{float}s. The dot product of vectors provides these scalars. The rotation matrices provide a way to move between these \texttt{array}s of \texttt{float}s. For example, consider the rotation matrix from basis $A$ to $B$.
 \begin{equation}
   \begin{pmatrix}
     \mathbf{v} \cdot \mathbf{\hat{b}}_x \\
@@ -304,5 +325,4 @@ Spherical interpolation?
 % \vfill
 
 \end{document}
-
 
