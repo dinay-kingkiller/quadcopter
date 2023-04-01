@@ -47,8 +47,14 @@ Integrating over the unit 4-sphere:
 
 \begin{eqnarray}
 	\mathrm{q}_s = \cos\left(\frac{\left|\boldsymbol\omega\right|\Delta t}{2}\right)\nonumber\\
-	\mathrm{q}_v = \boldsymbol\omega \sin\left(\frac{\left|\boldsymbol\omega\|\Delta t}{2}\right) \nonumber
+	\mathrm{q}_v = \boldsymbol\omega \sin\left(\frac{\left|\boldsymbol\omega\right|\Delta t}{2}\right) \nonumber
 \end{eqnarray}
+
+\begin{eqnarray}
+  q_0[k+1] = -\exp\left(\frac{1}{2} \omega_0[k] \right)
+\end{eqnarray}
+
+
 
 Throughout this paper, I use notation of the sum of scaled unit vectors (versors), but coding is better described as \texttt{float}s. The dot product of vectors provides these scalars. The rotation matrices provide a way to move between these \texttt{array}s of \texttt{float}s. For example, consider the rotation matrix from basis $A$ to $B$.
 \begin{equation}
@@ -278,7 +284,7 @@ Integrating the quaternion into
 
 The quaternion is related to angular velocity by the following formula
 \begin{equation}
-  \dot{q} = \frace{1}{2} q \otimes \boldsymbol\omega
+  \dot{q} = \frac{1}{2} q \otimes \boldsymbol\omega
 \end{equation}
 
 
