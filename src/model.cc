@@ -31,10 +31,8 @@
 
 #include "ros/ros.h"
 
-#include "quadcopter/FullState.h"
 #include "quadcopter/Motor.h"
 #include "quadcopter/Sensor.h"
-#include "quadcopter/State.h"
 
 namespace quadcopter
 {
@@ -49,7 +47,7 @@ Model::Model(float Mass, float ArmLength, float GAccel, float kForce, float kTor
 }
 Sensor Model::sense()
 {
-  FullState deriv = Model::ODE(last_state_, last_input_);
+  State deriv = Model::ODE(last_state_, last_input_);
   // Update the state since last sense.
   last_state_ = Model::integrateState(last_state_, deriv, ros::Time::now());
   return Model::measureState(last_state_);
@@ -57,41 +55,26 @@ Sensor Model::sense()
 void Model::zero()
 {
   last_state_.t = ros::Time::now();
-  last_state_.x = 0.0;
-  last_state_.y = 0.0;
-  last_state_.z = 0.0;
-  last_state_.a = 0.0;
-  last_state_.b = 0.0;
-  last_state_.c = 0.0;
-  last_state_.diff_x = 0.0;
-  last_state_.diff_y = 0.0;
-  last_state_.diff_z = 0.0;
-  last_state_.diff_a = 0.0;
-  last_state_.diff_b = 0.0;
-  last_state_.diff_c = 0.0;
+  last_state_= State;
   last_input_.front = 0.0;
   last_input_.right = 0.0;
   last_input_.back = 0.0;
   last_input_.left = 0.0;
 }
-void Model::move(Motor input) {last_input_ = input;}
-FullState Model::ODE(const FullState &state, const Motor &input) const
+void Model::move(Motor input) {input_ = input;}
+State Model::ODE() const
 {
-  // note that deriv.t is not defined.
-  FullState deriv;
-  deriv.x = state.diff_x;
-  deriv.y = state.diff_y;
-  deriv.z = state.diff_z;
-  deriv.a = state.diff_a;
-  deriv.b = state.diff_b;
-  deriv.c = state.diff_c;
-  float input2 = input.front * input.front
-    + input.right * input.right
-    + input.back * input.back
-    + input.left * input.left;
-  deriv.diff_x = k_force_ / mass_ * sin(state.a) * input2;
-  deriv.diff_y = - k_force_ / mass_ * cos(state.a) * sin(state.b) * input2;
-  deriv.diff_z = k_force_ / mass_ * cos(state.a) * cos(state.b) * input2 - k_gravity_;
+  State deriv;
+  deriv.pos = state_.vel;
+  deriv.ori[0] = -state_.spin[0]*state.ori[1] - state.spin[1]*state.ori[2] - state.spin[2]*state.ori[3];
+  deriv.ori[1] =  state.spin[0]*state.ori[0] + state.spin[1]*state.ori[3] - state.spin[2]*state.ori[2];
+  deriv.ori[2] = -state.spin[0]*state.ori[3] + state.spin[1]*state.ori[0] + state.spin[2]*state.ori[1];
+  deriv.ori[3] =  state.spin[0]*state.ori[2] - state.spin[1]*state.ori[1] + state.spin[2]*state.ori[0]
+  float input2 = input.front * input.front + input.right * input.right
+    + input.back * input.back + input.left * input.left;
+  deriv.pos[0] = k_force_ / mass_ * sin(state.a) * input2;
+  deriv.pos[1] = - k_force_ / mass_ * cos(state.a) * sin(state.b) * input2;
+  deriv.pos[2] = k_force_ / mass_ * cos(state.a) * cos(state.b) * input2 - k_gravity_;
   // The conservation of angular momentum equation is more complicated
   float m_inertia = mass_ * arm_length_ * arm_length_;
   float f0 = m_inertia * state.diff_b * state.diff_c * cos(state.c) * cos(state.a) / 2.0
@@ -114,37 +97,10 @@ FullState Model::ODE(const FullState &state, const Motor &input) const
   ROS_ASSERT_MSG(mm01 != 0.0, "Division by zero. mm01 = %f", mm01);
   ROS_ASSERT_MSG(mm10 != 0.0, "Division by zero. mm10 = %f", mm10);
   float inv_det = - 1.0 / (mm01 * mm10);
-  deriv.a = inv_det * (f0*mm11 - f1*mm01 - f2*mm02*mm11);
-  deriv.b = inv_det * (-f0*mm10 + f1*mm00 + f2*mm02*mm10);
-  deriv.c = inv_det * f2 * (mm00*mm11-mm01*mm10);
+  deriv.spin[0] = inv_det * (f0*mm11 - f1*mm01 - f2*mm02*mm11);
+  deriv.spin[1] = inv_det * (-f0*mm10 + f1*mm00 + f2*mm02*mm10);
+  deriv.spin[2] = inv_det * f2 * (mm00*mm11-mm01*mm10);
   return deriv;
-}
-FullState Model::integrateState(const FullState &old_state,
-				const FullState &change,
-				const ros::Time &new_t) const
-{
-  FullState new_state;
-  new_state.t = new_t;
-  float dt = new_state.t.toSec() - old_state.t.toSec();
-  new_state.x = change.x * dt + old_state.x;
-  new_state.y = change.y * dt + old_state.y;
-  new_state.z = change.z * dt + old_state.z;
-  new_state.a = change.a * dt + old_state.a;
-  new_state.b = change.b * dt + old_state.b;
-  new_state.c = change.c * dt + old_state.c;
-  new_state.diff_x = change.diff_x * dt + old_state.diff_x;
-  new_state.diff_y = change.diff_y * dt + old_state.diff_y;
-  new_state.diff_z = change.diff_z * dt + old_state.diff_z;
-  new_state.diff_a = change.diff_a * dt + old_state.diff_a;
-  new_state.diff_b = change.diff_b * dt + old_state.diff_b;
-  new_state.diff_c = change.diff_c * dt + old_state.diff_c;
-  new_state.ddiff_x = change.diff_x;
-  new_state.ddiff_y = change.diff_y;
-  new_state.ddiff_z = change.diff_z;
-  new_state.ddiff_a = change.diff_a;
-  new_state.ddiff_b = change.diff_b;
-  new_state.ddiff_c = change.diff_c;
-  return new_state;
 }
 Sensor Model::measureState(const FullState state) const
 {

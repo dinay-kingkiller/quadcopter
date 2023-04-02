@@ -37,7 +37,6 @@
 
 #include "quadcopter/Sensor.h"
 #include "quadcopter/Motor.h"
-#include "quadcopter/State.h"
 
 int main(int argc, char **argv)
 {
@@ -57,9 +56,9 @@ int main(int argc, char **argv)
     ("motor_input", 1000, &quadcopter::Model::move, &drone);
   while (ros::ok())
   {
-  quadcopter::Sensor sensor_msg = drone.sense();
-  sensor_pub.publish(sensor_msg);
-  sensor_rate.sleep();
+    quadcopter::Sensor sensor_msg = drone.sense();
+    sensor_pub.publish(sensor_msg);
+    sensor_rate.sleep();
   }  
   return 0;
 }

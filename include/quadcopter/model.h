@@ -38,14 +38,23 @@
 
 #include "ros/ros.h"
 
-#include "quadcopter/FullState.h"
 #include "quadcopter/Motor.h"
 #include "quadcopter/Sensor.h"
-#include "quadcopter/State.h"
+#include "geometry_msgs/Pose.h"
 
 
 namespace quadcopter
 {
+
+/// \struct quadcopter::State
+/// \brief Provides a succinct way to pass the state to and from the ODE and solver
+struct State {
+  std::array<float, 3> pos = {{0.0, 0.0, 0.0}};
+  std::array<float, 3> vel = {{0.0, 0.0, 0.0}};
+  std::array<float, 4> ori = {{1.0, 0.0, 0.0, 0.0}};
+  std::array<float, 3> spin = {{0.0, 0.0, 0.0}};
+};
+
 /// \class quadcopter::Model
 /// \brief Models the physics of a quadcopter and provides sensor feedback.
 class Model
@@ -59,31 +68,23 @@ public:
   /// \brief Sets the motor values to a new input.
   void move(Motor input);
   /// \fn Sensor quadcopter::Model::sense()
-  /// \brief Updates and measures the current state of the quadcopter.
-  ///
-  /// The model only updates when this is called. For long periods between calls the simulation
-  /// loses authenticity.
+  /// \brief Measures and returns the current state of the sensors.
   Sensor sense();
+  /// \fn Twist quadcopter::Model::update();
+  /// \brief Updates the model and returns the new state for vizualizing.
+  geometry_msgs::Pose update();
 private:
   const float mass_;
   const float arm_length_;
   const float k_gravity_; 
   const float k_torque_; /// torque constant of motors
   const float k_force_; /// force constant of motors
-  ros::Time last_time_;
-  FullState last_state_;
-  Motor last_input_;
+  ros::Time time_;
+  State state_;
+  Motor input_;
   /// \fn FullState ODE(FullState state, Motor input)
-  /// \brief Calculates the derivative of the quadcopter `state` 
-  FullState ODE(const FullState &state, const Motor &input) const;
-  /// \fn FullState integrateState(FullState old_state, FullState derivative, float diff_t)
-  /// \brief Combines the derivative with the old state to calculate the next state.
-  FullState integrateState(const FullState &old_state,
-			   const FullState &derivative,
-			   const ros::Time &new_t) const;
-  /// \fn IMU measureState(FullState state)
-  /// \brief Convert state into an IMU message
-  Sensor measureState(const FullState state) const;
+  /// \brief Calculates and returns the trajectory of the quadcopter `state_`
+  State ODE() const;
 };
 } //namespace quadcopter
 

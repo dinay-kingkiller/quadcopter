@@ -8,6 +8,7 @@ project(quadcopter)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
   message_generation
   roscpp
   rospy
@@ -49,17 +50,15 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  FullState.msg
   Motor.msg
   Sensor.msg
-  State.msg
 )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  Control.srv
-)
+# add_service_files(
+#   FILES
+#   Control.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -69,7 +68,7 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages()
+generate_messages(DEPENDENCIES geometry_msgs)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -103,7 +102,7 @@ generate_messages()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES quadcopter
-  CATKIN_DEPENDS message_generation roscpp rospy
+  CATKIN_DEPENDS geometry_msgs message_generation roscpp rospy
 #  DEPENDS system_lib
 )
 

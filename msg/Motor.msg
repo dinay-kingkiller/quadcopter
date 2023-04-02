@@ -1,4 +1,4 @@
-float32 front
-float32 right
-float32 left
-float32 back
+float64 front
+float64 right
+float64 left
+float64 back
