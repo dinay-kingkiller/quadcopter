@@ -1,2 +1,2 @@
-geometry_msgs/Vector3 gyroscrope
+geometry_msgs/Vector3 gyroscope
 geometry_msgs/Vector3 accelerometer

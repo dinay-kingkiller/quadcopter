@@ -51,10 +51,15 @@ namespace quadcopter
 struct State {
   std::array<float, 3> pos = {{0.0, 0.0, 0.0}};
   std::array<float, 3> vel = {{0.0, 0.0, 0.0}};
+  std::array<float, 3> acc = {{0.0, 0.0, 0.0}};
   std::array<float, 4> ori = {{1.0, 0.0, 0.0, 0.0}};
   std::array<float, 3> spin = {{0.0, 0.0, 0.0}};
 };
 
+/// \def quadcopter::ZERO_STATE
+/// \brief A State instance that defaults to zero.
+static const struct State ZERO_STATE;
+  
 /// \class quadcopter::Model
 /// \brief Models the physics of a quadcopter and provides sensor feedback.
 class Model
@@ -64,15 +69,18 @@ public:
   /// \fn void quadcopter::Model::zero()
   /// \brief Places the quadcopter back at the origin and restarts the clock.
   void zero();
+  /// \fn State get_trajectory()
+  /// \brief Returns the trajectory of the quadcopter's current state.
+  State get_trajectory() const;
+  /// \fn Twist quadcopter::Model::update();
+  /// \brief Updates the model and returns the quadcopter pose.
+  geometry_msgs::Pose update();
   /// \fn void quadcopter::Model::move(Motor input)
   /// \brief Sets the motor values to a new input.
   void move(Motor input);
   /// \fn Sensor quadcopter::Model::sense()
   /// \brief Measures and returns the current state of the sensors.
   Sensor sense();
-  /// \fn Twist quadcopter::Model::update();
-  /// \brief Updates the model and returns the new state for vizualizing.
-  geometry_msgs::Pose update();
 private:
   const float mass_;
   const float arm_length_;
@@ -82,9 +90,6 @@ private:
   ros::Time time_;
   State state_;
   Motor input_;
-  /// \fn FullState ODE(FullState state, Motor input)
-  /// \brief Calculates and returns the trajectory of the quadcopter `state_`
-  State ODE() const;
 };
 } //namespace quadcopter
 
