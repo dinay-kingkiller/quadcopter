@@ -132,5 +132,14 @@ geometry_msgs::Pose Model::update()
   float dt = this_time.toSec() - time_.toSec();
   State deriv = Model::get_trajectory();
   time_ = this_time;
+  for (int i = 0; i < 3; ++i) {
+    state_.acc[i] = deriv.vel[i];
+    state_.vel[i] += deriv.vel[i] * dt;
+    state_.pos[i] += deriv.pos[i] * dt;
+    state_.spin[i] += deriv.spin[i] * dt;
+  }
+  for (int i = 0; i < 4; ++i) {
+    state_.ori[i] += deriv.ori[i] * dt;
+  }
 }
 } // namespace quadcopter
