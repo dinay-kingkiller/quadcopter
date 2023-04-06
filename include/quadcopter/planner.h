@@ -26,3 +26,24 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifndef QUADCOPTER_PLANNER_H_
+#define QUADCOPTER_PLANNER_H_
+
+namespace Quadcopter {
+
+/// \brief Tells the quadcopter what to do.
+///
+/// This class is used to calculate and publish motor input messages.
+/// This one specifically is static: the message is generated at initialization
+/// and published every callback
+class  Planner {
+public:
+private:
+  
+}
+  
+  
+}
+
+#endif // QUADCOPTER_PLANNER_H_
