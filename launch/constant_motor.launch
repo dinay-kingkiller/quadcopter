@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+  <node>
+    pkg="quadcopter"
+    type="run_model"
+    name="model"
+  </node>
+  <node>
+    pkg="quadcopter"
+    type="run_controller_constant"
+    name="controller"
+    args="zero"
+  </node>
+</launch>
