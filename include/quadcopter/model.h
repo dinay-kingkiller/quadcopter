@@ -27,11 +27,9 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file model.h
-/// \brief A quadcopter model
+/// \brief A model to simulate quadcopter physics
 ///
-/// Provides a class `quadcopter` that for simulating the physics of a quadcopter and providing
-/// sensor feedback.
+/// Models the equations of motion, taking in motor inputs and sending out sensor outputs.
 
 #ifndef QUADCOPTER_MODEL_H_
 #define QUADCOPTER_MODEL_H_
