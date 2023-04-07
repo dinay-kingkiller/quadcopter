@@ -64,7 +64,7 @@ int main(int argc, char **argv)
   float balance = 0.5*sqrt(mass*k_gravity/k_torque);
 
   quadcopter::Motor motor_input;
-  if (argv[0] == "none")
+  if (argv[0] == "zero")
     {
       motor_input.front = 0.0;
       motor_input.right = 0.0;
