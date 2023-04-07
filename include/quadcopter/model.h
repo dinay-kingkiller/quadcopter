@@ -44,7 +44,6 @@
 namespace quadcopter
 {
 
-/// \struct quadcopter::State
 /// \brief Provides a succinct way to pass the state to and from the ODE and solver
 struct State {
   std::array<float, 3> pos = {{0.0, 0.0, 0.0}};
@@ -54,34 +53,27 @@ struct State {
   std::array<float, 3> spin = {{0.0, 0.0, 0.0}};
 };
 
-/// \def quadcopter::ZERO_STATE
-/// \brief A State instance that defaults to zero.
-static const struct State ZERO_STATE;
+/// \brief A State instance for resetting to defaults.
+static const struct State DEFAULT_STATE;
   
-/// \class quadcopter::Model
 /// \brief Models the physics of a quadcopter and provides sensor feedback.
 class Model
 {
 public:
   Model(float Mass, float ArmLength, float GAccel, float kForce, float kTorque);
-  /// \fn void quadcopter::Model::zero()
   /// \brief Places the quadcopter back at the origin and restarts the clock.
   void zero();
-  /// \fn State get_trajectory()
   /// \brief Returns the trajectory of the quadcopter's current state.
   State get_trajectory() const;
-  /// \fn Twist quadcopter::Model::update();
   /// \brief Updates the model and returns the quadcopter pose.
   geometry_msgs::Pose update();
-  /// \fn void quadcopter::Model::move(Motor input)
   /// \brief Sets the motor values to a new input.
   void move(Motor input);
-  /// \fn Sensor quadcopter::Model::sense()
   /// \brief Measures and returns the current state of the sensors.
   Sensor sense();
 private:
   const float mass_;
-  const float arm_length_;
+  const float radius_;
   const float k_gravity_; 
   const float k_torque_; /// torque constant of motors
   const float k_force_; /// force constant of motors
