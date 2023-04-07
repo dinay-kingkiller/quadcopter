@@ -36,9 +36,9 @@
 
 namespace quadcopter
 {
-Model::Model(float Mass, float ArmLength, float GAccel, float kForce, float kTorque)
+Model::Model(float Mass, float Radius, float GAccel, float kForce, float kTorque)
   : mass_(Mass),
-    arm_length_(ArmLength),
+    radius_(Radius),
     k_gravity_(GAccel),
     k_torque_(kTorque),
     k_force_(kForce)
@@ -60,7 +60,7 @@ Sensor Model::sense()
 void Model::zero()
 {
   time_ = ros::Time::now();
-  state_ = quadcopter::ZERO_STATE;
+  state_ = quadcopter::DEFAULT_STATE;
   input_.front = 0.0;
   input_.right = 0.0;
   input_.back = 0.0;
@@ -71,41 +71,38 @@ State Model::get_trajectory() const
 {
   State deriv;
   deriv.pos = state_.vel;
-  deriv.ori[0] = -state_.spin[0]*state_.ori[1];
-  deriv.ori[0] -= state_.spin[1]*state_.ori[2];
-  deriv.ori[0] -= state_.spin[2]*state_.ori[3];
+  deriv.ori[0] = -state_.spin[0]*state_.ori[1]
+    - state_.spin[1]*state_.ori[2]
+    - state_.spin[2]*state_.ori[3];
   
-  deriv.ori[1] =  state_.spin[0]*state_.ori[0];
-  deriv.ori[1] += state_.spin[1]*state_.ori[3];
-  deriv.ori[1] -= state_.spin[2]*state_.ori[2];
+  deriv.ori[1] =  state_.spin[0]*state_.ori[0]
+    + state_.spin[1]*state_.ori[3]
+    - state_.spin[2]*state_.ori[2];
   
-  deriv.ori[2] = -state_.spin[0]*state_.ori[3];
-  deriv.ori[2] += state_.spin[1]*state_.ori[0];
-  deriv.ori[2] += state_.spin[2]*state_.ori[1];
+  deriv.ori[2] = -state_.spin[0]*state_.ori[3]
+    + state_.spin[1]*state_.ori[0]
+    + state_.spin[2]*state_.ori[1];
   
-  deriv.ori[3] =  state_.spin[0]*state_.ori[2];
-  deriv.ori[3] -= state_.spin[1]*state_.ori[1];
-  deriv.ori[3] += state_.spin[2]*state_.ori[0];
+  deriv.ori[3] = state_.spin[0]*state_.ori[2] 
+    - state_.spin[1]*state_.ori[1]
+    + state_.spin[2]*state_.ori[0];
 
-  float thrust = input_.front*input_.front;
-  thrust += input_.right*input_.right;
-  thrust += input_.back*input_.back;
-  thrust += input_.left*input_.left;
+  float thrust = input_.front*input_.front
+    + input_.right*input_.right
+    + input_.back*input_.back
+    + input_.left*input_.left;
 
-  deriv.pos[0] =  2 * state_.ori[0] * state_.ori[3];
-  deriv.pos[0] += 2 * state_.ori[1] * state_.ori[2];
-  deriv.pos[0] *= k_force_ * thrust / mass_;
+  deriv.pos[0] =  2 * k_force_ * thrust / mass_ * state_.ori[0] * state_.ori[3]
+    + 2 * k_force_ * thrust / mass_ * state_.ori[1] * state_.ori[2];
 
-  deriv.pos[1] = state_.ori[0] * state_.ori[0];
-  deriv.pos[1] -= state_.ori[1] * state_.ori[1];
-  deriv.pos[1] -= state_.ori[2] * state_.ori[2];
-  deriv.pos[1] -= state_.ori[3] * state_.ori[3];
-  deriv.pos[1] *= k_force_* thrust / mass_;
+  deriv.pos[1] = k_force_* thrust / mass_ * state_.ori[0] * state_.ori[0]
+    - k_force_* thrust / mass_ * state_.ori[1] * state_.ori[1]
+    - k_force_* thrust / mass_ * state_.ori[2] * state_.ori[2]
+    - k_force_* thrust / mass_ * state_.ori[3] * state_.ori[3];
 
-  deriv.pos[2] = 2 * state_.ori[0] * state_.ori[1];
-  deriv.pos[2] += 2 * state_.ori[2] * state_.ori[3];
-  deriv.pos[2] *= k_force_ * thrust / mass_;
-  deriv.pos[2] -= k_gravity_;
+  deriv.pos[2] = k_force_ * thrust / mass_ * 2 * state_.ori[0] * state_.ori[1]
+    + k_force_ * thrust / mass_ * 2 * state_.ori[2] * state_.ori[3]
+    - k_gravity_;
   
   float r_torque = input_.right*input_.right;
   r_torque -= input_.left*input_.left;
