@@ -139,5 +139,15 @@ geometry_msgs::Pose Model::update()
   for (int i = 0; i < 4; ++i) {
     state_.ori[i] += deriv.ori[i] * dt;
   }
+
+  geometry_msgs::Pose new_pose;
+  new_pose.position.x = state_.pos[0];
+  new_pose.position.y = state_.pos[1];
+  new_pose.position.z = state_.pos[2];
+  new_pose.orientation.w = state_.ori[0];
+  new_pose.orientation.x = state_.ori[1];
+  new_pose.orientation.y = state_.ori[2];
+  new_pose.orientation.z = state_.ori[3];
+  return new_pose;
 }
 } // namespace quadcopter
