@@ -1,5 +1,5 @@
-Mass:
-Radius: 30
-GAccel: 9.8
-kForce: 
-kTorque:
+Mass: 0.500 # kg
+Radius: 0.100 # m
+GAccel: 10 # m/s^2
+kForce: 1 # kg*m
+kTorque: 1 # kg*m^2

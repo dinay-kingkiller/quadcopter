@@ -48,7 +48,6 @@ namespace quadcopter
 struct State {
   std::array<float, 3> pos = {{0.0, 0.0, 0.0}};
   std::array<float, 3> vel = {{0.0, 0.0, 0.0}};
-  std::array<float, 3> acc = {{0.0, 0.0, 0.0}};
   std::array<float, 4> ori = {{1.0, 0.0, 0.0, 0.0}};
   std::array<float, 3> spin = {{0.0, 0.0, 0.0}};
 };
@@ -78,6 +77,7 @@ private:
   const float k_torque_; /// torque constant of motors
   const float k_force_; /// force constant of motors
   ros::Time time_;
+  std::array<float, 3> accel_;
   State state_;
   Motor input_;
 };

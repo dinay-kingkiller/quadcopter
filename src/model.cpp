@@ -51,7 +51,7 @@ Sensor Model::sense()
   Sensor sensor;
   sensor.accelerometer.x = 0.0;
   sensor.accelerometer.y = 0.0;
-  sensor.accelerometer.z = -k_gravity_;
+  sensor.accelerometer.z = -k_gravity_; // this is wrong.
   sensor.gyroscope.x = state_.spin[0];
   sensor.gyroscope.y = state_.spin[1];
   sensor.gyroscope.z = state_.spin[2];
@@ -87,38 +87,38 @@ State Model::get_trajectory() const
     - state_.spin[1]*state_.ori[1]
     + state_.spin[2]*state_.ori[0];
 
-  float thrust = input_.front*input_.front
-    + input_.right*input_.right
-    + input_.back*input_.back
-    + input_.left*input_.left;
+  float thrust = k_force_ / mass_ * input_.front * input_.front
+    + k_force_ / mass_ * input_.right * input_.right
+    + k_force_ / mass_ * input_.back * input_.back
+    + k_force_ / mass_ * input_.left * input_.left;
 
-  deriv.pos[0] =  2 * k_force_ * thrust / mass_ * state_.ori[0] * state_.ori[3]
-    + 2 * k_force_ * thrust / mass_ * state_.ori[1] * state_.ori[2];
+  deriv.pos[0] =  2 * thrust * state_.ori[0] * state_.ori[3]
+    + 2 * thrust * state_.ori[1] * state_.ori[2];
 
-  deriv.pos[1] = k_force_* thrust / mass_ * state_.ori[0] * state_.ori[0]
-    - k_force_* thrust / mass_ * state_.ori[1] * state_.ori[1]
-    - k_force_* thrust / mass_ * state_.ori[2] * state_.ori[2]
-    - k_force_* thrust / mass_ * state_.ori[3] * state_.ori[3];
+  deriv.pos[1] = thrust * state_.ori[0] * state_.ori[0]
+    - thrust * state_.ori[1] * state_.ori[1]
+    - thrust * state_.ori[2] * state_.ori[2]
+    - thrust * state_.ori[3] * state_.ori[3];
 
-  deriv.pos[2] = k_force_ * thrust / mass_ * 2 * state_.ori[0] * state_.ori[1]
-    + k_force_ * thrust / mass_ * 2 * state_.ori[2] * state_.ori[3]
+  deriv.pos[2] = 2 * thrust * state_.ori[0] * state_.ori[1]
+    + 2 * thrust * state_.ori[2] * state_.ori[3]
     - k_gravity_;
   
-  float r_torque = input_.right*input_.right;
-  r_torque -= input_.left*input_.left;
-  float p_torque = input_.back*input_.back;
-  p_torque -= input_.front*input_.front;
-  float y_torque = input_.front*input_.front;
-  y_torque += input_.back*input_.back;
-  y_torque -= input_.left*input_.left;
-  y_torque -= input_.right*input_.right;
-  float k_moment = k_force_ / mass_ / arm_length_;
+  float r_torque = input_.right * input_.right
+    - input_.left*input_.left;
+  float p_torque = input_.back*input_.back
+    - input_.front*input_.front;
+  float y_torque = input_.front*input_.front
+    + input_.back*input_.back
+    - input_.left*input_.left
+    - input_.right*input_.right;
+  float k_moment = k_force_ / mass_ / radius_;
   
-  deriv.spin[0] = -state_.spin[1] * state_.spin[2];
-  deriv.spin[0] += 2 * k_moment * r_torque;
+  deriv.spin[0] = -state_.spin[1] * state_.spin[2]
+    + 2 * k_moment * r_torque;
 
-  deriv.spin[1] = state_.spin[0]*state_.spin[2];
-  deriv.spin[1] += 2 * k_moment * p_torque;
+  deriv.spin[1] = state_.spin[0] * state_.spin[2]
+    + 2 * k_moment * p_torque;
   
   deriv.spin[2] = k_moment * y_torque;
   return deriv;
@@ -130,7 +130,8 @@ geometry_msgs::Pose Model::update()
   State deriv = Model::get_trajectory();
   time_ = this_time;
   for (int i = 0; i < 3; ++i) {
-    state_.acc[i] = deriv.vel[i];
+    accel_[i] = deriv.vel[i];
+    // Euler Integration: This can be improved.
     state_.vel[i] += deriv.vel[i] * dt;
     state_.pos[i] += deriv.pos[i] * dt;
     state_.spin[i] += deriv.spin[i] * dt;
