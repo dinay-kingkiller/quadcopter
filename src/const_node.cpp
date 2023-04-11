@@ -27,39 +27,35 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file model_node.cc
-/// \brief A ROS node that models a quadcopter.
-
+#include <string>
 
 #include "ros/ros.h"
 
-#include "quadcopter/model.h"
-
-#include "quadcopter/Sensor.h"
 #include "quadcopter/Motor.h"
+
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "model");
-  ros::NodeHandle node;
-  float Mass, ArmLength, kGravity, kTorque, kForce;
-  node.getParam("Mass", Mass);
-  node.getParam("ArmLength", ArmLength);
-  node.getParam("kGravity", kGravity);
-  node.getParam("kForce", kForce);
-  node.getParam("kTorque", kTorque);
-  quadcopter::Model drone(Mass, ArmLength, kGravity, kTorque, kForce);
-  ros::Rate sensor_rate(1000);
-  ros::Publisher sensor_pub = node.advertise<quadcopter::Sensor>
-    ("sensor_output", 1000);
-  ros::Subscriber motor_sub = node.subscribe<quadcopter::Motor>
-    ("motor_input", 1000, &quadcopter::Model::move, &drone);
+  ros::init(argc, argv, "controller");
+  ros::NodeHandle nh;
+
+  float mass, k_gravity, k_torque;
+  nh.getParam("Mass", mass);
+  nh.getParam("GAccel", k_gravity);
+  nh.getParam("kTorque", k_torque);
+  ROS_ASSERT_MSG(k_torque > 0.001, "Torque Constant set too low.");
+  float motor_balance = 0.5*sqrt(mass*k_gravity/k_torque);
+
+  std::string motor_config;
+  nh.getParam("motor_config", motor_config);
   
-  while (ros::ok())
-  {
-    quadcopter::Sensor sensor_msg = drone.sense();
-    sensor_pub.publish(sensor_msg);
-    sensor_rate.sleep();
-  }
+  ros::Publisher motor_pub = nh.advertise<quadcopter::Motor>("motor_input", 1000);
+  quadcopter::Controller controller(motor_pub, motor_config, motor_balance);
+  ros::Timer motor_timer = nh.createTimer(ros::Rate(1000),
+					  &quadcopter::Controller::publish_input,
+					  &controller);
+
+  ros::spin();
+
   return 0;
 }

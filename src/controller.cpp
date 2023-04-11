@@ -35,10 +35,11 @@
 
 namespace quadcopter
 {
-class Controller
+  
+class ConstantController
 {
 public:
-  Controller(ros::Publisher motor_pub, std::string motor_config, float motor_balance);
+  ConstantController(ros::Publisher motor_pub, std::string motor_config, float motor_balance);
   void publish_input(const ros::TimerEvent& e);
   bool set_msg(std::string motor_config, float motor_balance);
 private:
@@ -47,31 +48,6 @@ private:
 };
 } // namespace quadcopter
 
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "controller");
-  ros::NodeHandle nh;
-
-  float mass, k_gravity, k_torque;
-  nh.getParam("Mass", mass);
-  nh.getParam("GAccel", k_gravity);
-  nh.getParam("kTorque", k_torque);
-  ROS_ASSERT_MSG(k_torque > 0.001, "Torque Constant set too low.");
-  float motor_balance = 0.5*sqrt(mass*k_gravity/k_torque);
-
-  std::string motor_config;
-  nh.getParam("motor_config", motor_config);
-  
-  ros::Publisher motor_pub = nh.advertise<quadcopter::Motor>("motor_input", 1000);
-  quadcopter::Controller controller(motor_pub, motor_config, motor_balance);
-  ros::Timer motor_timer = nh.createTimer(ros::Rate(1000),
-					  &quadcopter::Controller::publish_input,
-					  &controller);
-
-  ros::spin();
-
-  return 0;
-}
 
 quadcopter::Controller::Controller(ros::Publisher motor_pub, std::string motor_config, float motor_balance)
   : motor_pub_(motor_pub)
