@@ -28,28 +28,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <string>
-
 #include "ros/ros.h"
-
 #include "quadcopter/Motor.h"
+#include "quadcopter/controller.h"
 
 namespace quadcopter
 {
-  
-class ConstantController
-{
-public:
-  ConstantController(ros::Publisher motor_pub, std::string motor_config, float motor_balance);
-  void publish_input(const ros::TimerEvent& e);
-  bool set_msg(std::string motor_config, float motor_balance);
-private:
-  ros::Publisher motor_pub_;
-  quadcopter::Motor motor_msg_;
-};
-} // namespace quadcopter
 
-
-quadcopter::Controller::Controller(ros::Publisher motor_pub, std::string motor_config, float motor_balance)
+Controller::Controller(ros::Publisher motor_pub,
+                       std::string motor_config,
+                       float motor_balance)
   : motor_pub_(motor_pub)
 {
   set_msg(motor_config, motor_balance);
@@ -58,7 +46,8 @@ void quadcopter::Controller::publish_input(const ros::TimerEvent& e)
 {
   motor_pub_.publish(motor_msg_);
 }
-bool quadcopter::Controller::set_msg(std::string motor_config, float motor_balance)
+
+bool Controller::set_msg(std::string motor_config, float motor_balance)
 {
   /// TODO: This validation needs to be pulled out of the constructor.
   if (motor_config == "zero") {
