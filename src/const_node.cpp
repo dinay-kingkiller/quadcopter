@@ -51,9 +51,11 @@ int main(int argc, char **argv)
   
   ros::Publisher motor_pub = nh.advertise<quadcopter::Motor>("motor_input", 1000);
   quadcopter::Controller controller(motor_pub, motor_config, motor_balance);
-  ros::Timer motor_timer = nh.createTimer(ros::Rate(1000),
-					  &quadcopter::Controller::publish_input,
-					  &controller);
+  ros::Timer motor_timer =
+    nh.createTimer(
+      ros::Rate(1000),
+      &quadcopter::Controller::publish_input,
+      &controller);
 
   ros::spin();
 
