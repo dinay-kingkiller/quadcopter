@@ -35,13 +35,15 @@
 namespace quadcopter
 {
 
-Controller::Controller(ros::Publisher motor_pub,
-                       std::string motor_config,
-                       float motor_balance)
-  : motor_pub_(motor_pub)
+Controller::Controller(
+  ros::Publisher motor_pub,
+  std::string motor_config,
+  float motor_balance)
+: motor_pub_(motor_pub)
 {
   set_msg(motor_config, motor_balance);
 }
+
 void quadcopter::Controller::publish_input(const ros::TimerEvent& e)
 {
   motor_pub_.publish(motor_msg_);
