@@ -36,13 +36,10 @@
 
 namespace quadcopter
 {
-Model::Model(float Mass, float Radius, float GAccel, float kForce, float kTorque)
-  : mass_(Mass),
-    radius_(Radius),
-    k_gravity_(GAccel),
-    k_torque_(kTorque),
-    k_force_(kForce)
+Model::Model(ros::NodeHandle node)
+: node_(node)
 {
+  Model::reset_params();
   Model::zero();
 }
 Sensor Model::sense()
@@ -105,13 +102,13 @@ State Model::get_trajectory() const
     - k_gravity_;
   
   float r_torque = input_.right * input_.right
-    - input_.left*input_.left;
-  float p_torque = input_.back*input_.back
-    - input_.front*input_.front;
-  float y_torque = input_.front*input_.front
-    + input_.back*input_.back
-    - input_.left*input_.left
-    - input_.right*input_.right;
+    - input_.left * input_.left;
+  float p_torque = input_.back * input_.back
+    - input_.front * input_.front;
+  float y_torque = input_.front * input_.front
+    + input_.back * input_.back
+    - input_.left * input_.left
+    - input_.right * input_.right;
   float k_moment = k_force_ / mass_ / radius_;
   
   deriv.spin[0] = -state_.spin[1] * state_.spin[2]
@@ -123,7 +120,7 @@ State Model::get_trajectory() const
   deriv.spin[2] = k_moment * y_torque;
   return deriv;
 }
-geometry_msgs::Pose Model::update()
+void Model::update(const ros::TimerEvent& e)
 {
   ros::Time this_time = ros::Time::now();
   float dt = this_time.toSec() - time_.toSec();
@@ -131,7 +128,6 @@ geometry_msgs::Pose Model::update()
   time_ = this_time;
   for (int i = 0; i < 3; ++i) {
     accel_[i] = deriv.vel[i];
-    // Euler Integration: This can be improved.
     state_.vel[i] += deriv.vel[i] * dt;
     state_.pos[i] += deriv.pos[i] * dt;
     state_.spin[i] += deriv.spin[i] * dt;
@@ -144,10 +140,7 @@ geometry_msgs::Pose Model::update()
   new_pose.position.x = state_.pos[0];
   new_pose.position.y = state_.pos[1];
   new_pose.position.z = state_.pos[2];
-  new_pose.orientation.w = state_.ori[0];
-  new_pose.orientation.x = state_.ori[1];
-  new_pose.orientation.y = state_.ori[2];
-  new_pose.orientation.z = state_.ori[3];
+  new_pose.orientation = state_.ori;
   return new_pose;
 }
 } // namespace quadcopter

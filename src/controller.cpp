@@ -45,7 +45,7 @@ ConstantController::ConstantController(ros::NodeHandle node)
   motor_pub_ = node.advertise<quadcopter::Motor>("motor_input", 1000);
 }
 
-void quadcopter::ConstantController::publish_input(const ros::TimerEvent& e)
+void ConstantController::publish_input(const ros::TimerEvent& e)
 {
   motor_pub_.publish(motor_msg_);
 }

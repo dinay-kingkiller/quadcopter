@@ -36,20 +36,23 @@
 
 #include "ros/ros.h"
 
+#include "geometry_msgs/Pose.h"
+#include "geometry_msgs/Quaternion.h"
+#include "geometry_msgs/Vector3.h"
+
 #include "quadcopter/Motor.h"
 #include "quadcopter/Sensor.h"
-#include "geometry_msgs/Pose.h"
-
 
 namespace quadcopter
 {
 
 /// \brief Provides a succinct way to pass the state to and from the ODE and solver
-struct State {
-  std::array<float, 3> pos = {{0.0, 0.0, 0.0}};
-  std::array<float, 3> vel = {{0.0, 0.0, 0.0}};
-  std::array<float, 4> ori = {{1.0, 0.0, 0.0, 0.0}};
-  std::array<float, 3> spin = {{0.0, 0.0, 0.0}};
+struct State
+{
+  geometry_msgs::Vector3 r;
+  geometry_msgs::Vector3 v;
+  geometry_msgs::Quaternion q;
+  geometry_msgs::Vector3 w;
 };
 
 /// \brief A State instance for resetting to defaults.
@@ -59,27 +62,38 @@ static const struct State DEFAULT_STATE;
 class Model
 {
 public:
-  Model(float Mass, float ArmLength, float GAccel, float kForce, float kTorque);
+  Model(ros::NodeHandle node);
   /// \brief Places the quadcopter back at the origin and restarts the clock.
   void zero();
-  /// \brief Returns the trajectory of the quadcopter's current state.
-  State get_trajectory() const;
-  /// \brief Updates the model and returns the quadcopter pose.
-  geometry_msgs::Pose update();
+  /// \brief Returns the trajectory of the quadcopter state.
+  State get_trajectory(State state, Motor input) const;
+  /// \brief Timer callback that updates and publishes the pose.
+  void update(const ros::TimerEvent& e);
   /// \brief Sets the motor values to a new input.
   void move(Motor input);
-  /// \brief Measures and returns the current state of the sensors.
-  Sensor sense();
+  /// \brief Measures and publishes the current state of the sensors.
+  void sense(const ros::TimerEvent& e);
 private:
+  /// \brief node instance for communicating with ROS
+  ros::NodeHandle node_;
+  /// \brief mass of the quadcopter. Model assumes all mass is in the motors.
   const float mass_;
+  /// \brief length of each arm. Model assumes all mass is in the motors.
   const float radius_;
-  const float k_gravity_; 
-  const float k_torque_; /// torque constant of motors
-  const float k_force_; /// force constant of motors
-  ros::Time time_;
-  std::array<float, 3> accel_;
+  /// \brief graviational acceleration constant
+  float k_gravity_;
+  /// \brief torque constant of motors
+  float k_torque_; 
+  /// \brief force constant of motors
+  float k_force_;
+  /// \brief time the state was last updated
+  float time_;
+  /// \brief last updated state
   State state_;
+  /// \brief last motor input given
   Motor input_;
+  /// \brief Acceleration in the inertial frame for adding sensor noise.
+  geometry_msgs::Vector3 accel_;
 };
 } //namespace quadcopter
 

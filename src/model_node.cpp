@@ -41,25 +41,24 @@
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "model");
-  ros::NodeHandle node;
-  float Mass, ArmLength, kGravity, kTorque, kForce;
-  node.getParam("Mass", Mass);
-  node.getParam("ArmLength", ArmLength);
-  node.getParam("kGravity", kGravity);
-  node.getParam("kForce", kForce);
-  node.getParam("kTorque", kTorque);
-  quadcopter::Model drone(Mass, ArmLength, kGravity, kTorque, kForce);
-  ros::Rate sensor_rate(1000);
-  ros::Publisher sensor_pub = node.advertise<quadcopter::Sensor>
-    ("sensor_output", 1000);
-  ros::Subscriber motor_sub = node.subscribe<quadcopter::Motor>
-    ("motor_input", 1000, &quadcopter::Model::move, &drone);
+  ros::NodeHandle nh;
+
+  quadcopter::Model drone(nh);
   
-  while (ros::ok())
-  {
-    quadcopter::Sensor sensor_msg = drone.sense();
-    sensor_pub.publish(sensor_msg);
-    sensor_rate.sleep();
-  }
+  ros::Subscriber motor_sub = nh.subscribe<quadcopter::Motor>(
+    "motor_input",
+    1000,
+    &quadcopter::Model::move,
+    &drone);
+  ros::Timer sensor_timer = nh.createTimer(
+    ros::Rate(1000),
+    &quadcopter::Model::sense,
+    &drone);
+  ros::Timer update_timer = nh.createTimer(
+    ros::Rate(1000),
+    &quadcopter::Model::update,
+    &drone);
+
+  ros::spin();
   return 0;
 }
