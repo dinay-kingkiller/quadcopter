@@ -27,6 +27,9 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef QUADCOPTER_CONTROLLER_H_
+#define QUADCOPTER_CONTROLLER_H_
+
 #include <string>
 
 #include "ros/ros.h"
@@ -35,7 +38,6 @@
 
 namespace quadcopter
 {
-
 /// \brief Provides a constant input to the motor controllers.
 ///
 /// This class is useful for testing everything except controllers. Its built for a control
@@ -43,11 +45,19 @@ namespace quadcopter
 class ConstantController
 {
 public:
-  ConstantController(ros::NodeHandle node, std::string motor_config);
+  ConstantController(ros::NodeHandle node);
+  /// \brief timer callback that publishes to the motor input topic.
   void publish_input(const ros::TimerEvent& e);
-  bool set_msg(std::string motor_config, float motor_balance);
 private:
+  /// \brief ROS node that represents the controller.
+  ros::NodeHandle node_;
+  /// \brief publisher object for motor input.
   ros::Publisher motor_pub_;
+  /// \brief message for publishing to motor input.
   quadcopter::Motor motor_msg_;
+  /// \brief sets the motor message based on the config attached to the node.
+  void set_msg();
 };
 } // namespace quadcopter
+
+#endif // QUADCOPTER_CONTROLLER_H_

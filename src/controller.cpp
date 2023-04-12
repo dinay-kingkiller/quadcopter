@@ -27,83 +27,87 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <string>
-#include "ros/ros.h"
-#include "quadcopter/Motor.h"
 #include "quadcopter/controller.h"
+
+#include <string>
+
+#include "ros/ros.h"
+
+#include "quadcopter/Motor.h"
 
 namespace quadcopter
 {
 
-Controller::Controller(
-  ros::Publisher motor_pub,
-  std::string motor_config,
-  float motor_balance)
-: motor_pub_(motor_pub)
+ConstantController::ConstantController(ros::NodeHandle node)
+: node_(node)
 {
-  set_msg(motor_config, motor_balance);
+  set_msg();
+  motor_pub_ = node.advertise<quadcopter::Motor>("motor_input", 1000);
 }
 
-void quadcopter::Controller::publish_input(const ros::TimerEvent& e)
+void quadcopter::ConstantController::publish_input(const ros::TimerEvent& e)
 {
   motor_pub_.publish(motor_msg_);
 }
 
-bool Controller::set_msg(std::string motor_config, float motor_balance)
+void ConstantController::set_msg()
 {
-  /// TODO: This validation needs to be pulled out of the constructor.
+  float mass, k_gravity, k_torque;
+  node_.getParam("Mass", mass);
+  node_.getParam("GAccel", k_gravity);
+  node_.getParam("kTorque", k_torque);
+  ROS_ASSERT_MSG(k_torque > 0.001, "Torque Constant set too low.");
+  float motor_balance = 0.5 * sqrt(mass*k_gravity/k_torque);
+
+  std::string motor_config;
+  node_.getParam("motor_config", motor_config);
+
   if (motor_config == "zero") {
     motor_msg_.front = 0.0;
     motor_msg_.right = 0.0;
     motor_msg_.back = 0.0;
     motor_msg_.left = 0.0;
-    return true;
   }
   else if (motor_config == "high") {
     motor_msg_.front = 2.0 * motor_balance;
     motor_msg_.right = 2.0 * motor_balance;
     motor_msg_.back = 2.0 * motor_balance;
     motor_msg_.left = 2.0 * motor_balance;
-    return true;
   }
   else if (motor_config == "low") {
     motor_msg_.front = 0.5 * motor_balance;
     motor_msg_.right = 0.5 * motor_balance;
     motor_msg_.back = 0.5 * motor_balance;
     motor_msg_.left = 0.5 * motor_balance;
-    return true;
   }
   else if (motor_config == "balanced") {
     motor_msg_.front = motor_balance;
     motor_msg_.right = motor_balance;
     motor_msg_.back = motor_balance;
     motor_msg_.left = motor_balance;
-    return true;
   }
   else if (motor_config == "roll") {
     motor_msg_.front = 0.0;
     motor_msg_.right = 0.75 * motor_balance;
     motor_msg_.back = 0.0;
     motor_msg_.left = 0.25 * motor_balance;
-    return true;
   }
   else if (motor_config == "pitch") {
     motor_msg_.front = 0.75 * motor_balance;
     motor_msg_.right = 0.0;
     motor_msg_.back =  0.25 * motor_balance;
     motor_msg_.left = 0.0;
-    return true;
   }
   else if (motor_config == "yaw") {
     motor_msg_.front = 0.375 * motor_balance;
     motor_msg_.right = 0.125 * motor_balance;
     motor_msg_.back = 0.375 * motor_balance;
     motor_msg_.left = 0.125 * motor_balance;
-    return true;
   }
   else {
     ROS_ERROR_STREAM("motor_config: "<<motor_config);
     ROS_ERROR("Invalid argument sent to controller_constant");
-    return false;
   }
-} // Controller::set_msg
+} // ConstantController::set_msg
+
+} // namespace quadcopter
