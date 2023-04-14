@@ -49,10 +49,10 @@ namespace quadcopter
 /// \brief Provides a succinct way to pass the state to and from the ODE and solver
 struct State
 {
-  geometry_msgs::Vector3 r;
-  geometry_msgs::Vector3 v;
-  geometry_msgs::Quaternion q;
-  geometry_msgs::Vector3 w;
+  geometry_msgs::Vector3 r; /// Position in inertial frame
+  geometry_msgs::Vector3 v; /// Velocity in inertial frame
+  geometry_msgs::Quaternion q; /// Rotation from inertial frame
+  geometry_msgs::Vector3 w; /// Rotation from inertial frame in robot frame
 };
 
 /// \brief A State instance for resetting to defaults.

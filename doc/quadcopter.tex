@@ -211,99 +211,11 @@ The moment from the reference frame $\mathbf{M}^* = \mathbf{I}\cdot \boldsymbol\
 
 % \section*{Acknowledgments}
 
-\appendices
-\section*{Definition of a Quaternion}
-Quadcopters rotate. And flip. Sometimes they even hover. In order to do any of these things, the rotation of the quadcopter must be tracked. A great way for tracking rotations is unit quaternions. This section covers the basic algebra the quaternion ring $\left(\mathbb{H}, +, \otimes\right)$.
-First, a quaternion is a member of a 4-dimensional vector space. Addition is defined simply:
-\begin{equation}
-  \begin{pmatrix}
-    p_0 \\
-    p_1 \\
-    p_2 \\
-    p_3
-  \end{pmatrix} +
-  \begin{pmatrix}
-    q_0 \\
-    q_1 \\
-    q_2 \\
-    q_3
-  \end{pmatrix} =
-  \begin{pmatrix}
-    p_0 + q_0 \\
-    p_1 + q_1 \\
-    p_2 + q_2 \\
-    p_3 + q_3
-  \end{pmatrix}
-\end{equation}
-Multiplication is more complex
-\begin{equation}
- \begin{pmatrix}
-    p_0 \\
-    p_1 \\
-    p_2 \\
-    p_3
-  \end{pmatrix} \otimes 
-  \begin{pmatrix}
-    q_0 \\
-    q_1 \\
-    q_2 \\
-    q_3
-  \end{pmatrix} =
-  \begin{pmatrix}
-    p_0q_0 - p_1q_1 - p_2q_2 - p_3q_3 \\
-    p_0q_1 + p_1q_0 + p_2q_3 - p_3q_2 \\
-    p_0q_2 - p_1q_3 + p_2q_0 + p_3q_1 \\
-    p_0q_3 + p_1q_2 - p_2q_1 + p_3q_0
-  \end{pmatrix}
-\end{equation}
-Please note, quaternion multiplication is not commutative (For most quaternions: $p\otimes q\neq q \otimes p$). Some other algebraic properties:
-Every scalar can be expressed as a quaternion $(s, 0, 0, 0)$ and every (3-)vector can be a quaternion $(0, v1, v2, v3)$. The 0-quaternion $(0, 0, 0, 0)$ is the additive identity and the 1-quaternion the multiplicative identity $(1, 0, 0, 0)$. The conjugate of a quaternion has inverted signs on the vector components: $q^*=(q0, q1, q2, q3)^*=(q0, -q1, -q2, -q3)$. The norm of a quaternion is the square root of the components, or the square of the quaternion multiplied by its conjugate (if we treat a purely scalar quaternion as a scalar).
-\begin{equation}
-  \|q\| = \sqrt{q\otimes q^*} = \sqrt{q_0^2+q_1^2+q_2^2+q_3^2}
-\end{equation}
-Every quaternion has an inverse $q^{-1}$ such that $q\otimes q^{-1}=1=q^{-1}\otimes q$. The inverse is $q^{-1}=q^*/\|q\|$. A quaternion with norm equal to one is called a unit quaternion, or versor. The quaternions covered outside this appendix can be considered unit quaternions. The $\otimes$ will be usually omitted too. We've seen that quaternion algebra can be applied to scalars and vectors. Pure vector multiplication notation will remain $\mathbf{u}\cdot\mathbf{v}$ and $\mathbf{u}\times\mathbf{v}$ for clarification, despite these also being quaternion operations.
-
-\section*{Quaternion Rotations}
-A unit quaternion can be used to describe a rotation between bases. A vector described in unit basis $A$ would be notated $^A\mathbf{v}$. The quaternion $^Aq^B$ transforms $^A\mathbf{v}$ to $^B\mathbf{v}$ by the following formula:
-\begin{equation}
-  {^B\mathbf{v}} = \left({^Aq^B}\right)\left( {^A\mathbf{v}}\right)\left( {^Aq^{B*}}\right)
-\end{equation}
-By pre- and post-multiplying quaternion conjugates to invert the rotation $\left({^Aq^{B*}}\right)\left({^B\mathbf{v}}\right)\left({^Aq^B}\right)={^A\mathbf{v}}$, we see that the inverse of the rotation is just its conjugate. Since we are only talking about two reference frames in this paper: the inertial and the robot; rotating between the two can be described with a quaternion and its conjugate. Rotating from the inertial to the robot frame is chosen to be ${^Nq^R}=q$ and the robot to the inertial frame ${^Rq^N}=q^*$.
-
-By Euler's rotation theorem, every rotation in 3-space can be described by a rotation axis and angle. For the transformation above, that quaternion is
-\begin{equation}
-  q = \exp\left(\frac{\theta}{2}\hat{\mathbf{u}}\right) = \cos\left(\frac{\theta}{2}\right) + \mathbf{u} \sin\left( \frac{\theta}{2}\right)
-\end{equation}
-where $\hat{\mathbf{u}}$ is the axis of rotation (scaled so that $\|q\|=1$) and $\theta$ is the rotated angle. Every rotation can be composed of small rotations when differentiated w.r.t. time gives:
-\begin{equation}
-  \dot{q} = \frac{1}{2} \dot{theta} \ \exp\left(\frac{\theta}{2} \hat{\mathbf{u}} \right)
-\end{equation}
-
-\section*{Quaternion Kinematics}
-Integrating the quaternion into 
-
-The quaternion is related to angular velocity by the following formula
-\begin{equation}
-  \dot{q} = \frac{1}{2} q \otimes \boldsymbol\omega
-\end{equation}
-
-
-
-Quaternion rotation from angular velocity
-\begin{equation}
-  \dot{q} = \frac{1}{2} q\boldsymbol\omega
-\end{equation}
-
-Linear interpolation
-\begin{equation}
-  q_{k+1} = \frac{1}{2}q_k\boldsymbol\omega\Delta t + q_k 
-\end{equation}
-
-Spherical interpolation?
-\begin{equation}
-  q_{k+1} = \exp\left(\frac{1}{2} \boldsymbol\omega\Delta t\right)q_k
-\end{equation}
-
+{\appendix[Quaternion Kinematics]
+Quadcopters hover, and rotate, and strafe, and sometimes flip.
+Its important to track any of these movements smoothly, and hopefully without adding code to handle edge cases.
+Quaternions are one such valuable representation.
+}
 
 %{\appendix[Proof of Zonklar Equations]
 %Use $\backslash${\tt{appendix}} if you have a single appendix:
