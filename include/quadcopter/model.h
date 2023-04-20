@@ -55,9 +55,6 @@ struct State
   geometry_msgs::Vector3 w; /// Rotation from inertial frame in robot frame
 };
 
-/// \brief A State instance for resetting to defaults.
-static const struct State DEFAULT_STATE;
-  
 /// \brief Models the physics of a quadcopter and provides sensor feedback.
 class Model
 {
@@ -65,9 +62,11 @@ public:
   Model(ros::NodeHandle node);
   /// \brief Places the quadcopter back at the origin and restarts the clock.
   void zero();
-  /// \brief Returns the trajectory of the quadcopter state.
+  /// \brief Set model parameters taken from ROS node_
+  void reset_params();
+  /// \brief Returns the trajectory of the state and input arguments.
   State get_trajectory(State state, Motor input) const;
-  /// \brief Timer callback that updates and publishes the pose.
+  /// \brief Timer callback that updates the model and publishes the pose.
   void update(const ros::TimerEvent& e);
   /// \brief Sets the motor values to a new input.
   void move(Motor input);
@@ -76,18 +75,22 @@ public:
 private:
   /// \brief node instance for communicating with ROS
   ros::NodeHandle node_;
+  /// \brief publisher for sensor messages
+  ros::Publisher sensor_pub_;
+  /// \brief publisher for current pose of the quadcopter
+  ros::Publisher pose_pub_;
   /// \brief mass of the quadcopter. Model assumes all mass is in the motors.
-  const float mass_;
+  float mass_;
   /// \brief length of each arm. Model assumes all mass is in the motors.
-  const float radius_;
+  float radius_;
   /// \brief graviational acceleration constant
   float k_gravity_;
-  /// \brief torque constant of motors
-  float k_torque_; 
   /// \brief force constant of motors
   float k_force_;
+  /// \brief torque constant of motors
+  float k_torque_; 
   /// \brief time the state was last updated
-  float time_;
+  ros::Time time_;
   /// \brief last updated state
   State state_;
   /// \brief last motor input given

@@ -41,106 +41,144 @@ Model::Model(ros::NodeHandle node)
 {
   Model::reset_params();
   Model::zero();
+  pose_pub_ = node.advertise<geometry_msgs::Pose>("pose", 1000);
+  sensor_pub_ = node.advertise<quadcopter::Sensor>("imu", 1000);
 }
-Sensor Model::sense()
+void Model::sense(const ros::TimerEvent& e)
 {
-  /// TODO: Add robot acceleration
+  /// TODO: The accleration calculations are all wrong.
   Sensor sensor;
   sensor.accelerometer.x = 0.0;
   sensor.accelerometer.y = 0.0;
-  sensor.accelerometer.z = -k_gravity_; // this is wrong.
-  sensor.gyroscope.x = state_.spin[0];
-  sensor.gyroscope.y = state_.spin[1];
-  sensor.gyroscope.z = state_.spin[2];
-  return sensor;
+  sensor.accelerometer.z = -k_gravity_;
+  sensor.gyroscope = state_.w;
+
+  sensor_pub_.publish(sensor);
+}
+void Model::reset_params()
+{
+  node_.getParam("Mass", mass_);
+  node_.getParam("Radius", radius_);
+  node_.getParam("GAccel", k_gravity_);
+  node_.getParam("kForce", k_force_);
+  node_.getParam("kTorque", k_torque_);
 }
 void Model::zero()
 {
   time_ = ros::Time::now();
-  state_ = quadcopter::DEFAULT_STATE;
+  state_.r.x = 0.0;
+  state_.r.y = 0.0;
+  state_.r.z = 0.0;
+  state_.v.x = 0.0;
+  state_.v.y = 0.0;
+  state_.v.z = 0.0;
+  state_.q.x = 0.0;
+  state_.q.y = 0.0;
+  state_.q.z = 0.0;
+  state_.q.w = 0.0;
+  state_.w.x = 0.0;
+  state_.w.y = 0.0;
+  state_.w.z = 0.0;
   input_.front = 0.0;
   input_.right = 0.0;
   input_.back = 0.0;
   input_.left = 0.0;
 }
 void Model::move(Motor input) {input_ = input;}
-State Model::get_trajectory() const
+State Model::get_trajectory(State state, Motor input) const
 {
   State deriv;
-  deriv.pos = state_.vel;
-  deriv.ori[0] = -state_.spin[0]*state_.ori[1]
-    - state_.spin[1]*state_.ori[2]
-    - state_.spin[2]*state_.ori[3];
+  deriv.r = state.v;
+  deriv.q.w = -state.w.x*state_.q.x
+    - state.w.y*state.q.y
+    - state.w.z*state.q.z;
   
-  deriv.ori[1] =  state_.spin[0]*state_.ori[0]
-    + state_.spin[1]*state_.ori[3]
-    - state_.spin[2]*state_.ori[2];
+  deriv.q.x =  state.w.x*state.q.w
+    + state.w.y*state.q.z
+    - state.w.z*state.q.y;
   
-  deriv.ori[2] = -state_.spin[0]*state_.ori[3]
-    + state_.spin[1]*state_.ori[0]
-    + state_.spin[2]*state_.ori[1];
+  deriv.q.y = -state.w.x*state.q.z
+    + state.w.y*state.q.w
+    + state.w.z*state.q.x;
   
-  deriv.ori[3] = state_.spin[0]*state_.ori[2] 
-    - state_.spin[1]*state_.ori[1]
-    + state_.spin[2]*state_.ori[0];
+  deriv.q.z = state.w.x*state.q.y 
+    - state.w.y*state.q.x
+    + state.w.z*state.q.w;
 
-  float thrust = k_force_ / mass_ * input_.front * input_.front
-    + k_force_ / mass_ * input_.right * input_.right
-    + k_force_ / mass_ * input_.back * input_.back
-    + k_force_ / mass_ * input_.left * input_.left;
+  float thrust = k_force_ / mass_ * input.front * input.front
+    + k_force_ / mass_ * input.right * input.right
+    + k_force_ / mass_ * input.back * input.back
+    + k_force_ / mass_ * input.left * input.left;
 
-  deriv.pos[0] =  2 * thrust * state_.ori[0] * state_.ori[3]
-    + 2 * thrust * state_.ori[1] * state_.ori[2];
+  deriv.r.x =  2 * thrust * state.q.w * state.q.z
+    + 2 * thrust * state.q.x * state.q.y;
 
-  deriv.pos[1] = thrust * state_.ori[0] * state_.ori[0]
-    - thrust * state_.ori[1] * state_.ori[1]
-    - thrust * state_.ori[2] * state_.ori[2]
-    - thrust * state_.ori[3] * state_.ori[3];
+  deriv.r.y = thrust * state.q.w * state.q.w
+    - thrust * state.q.x * state.q.x
+    - thrust * state.q.y * state.q.y
+    - thrust * state.q.z * state.q.z;
 
-  deriv.pos[2] = 2 * thrust * state_.ori[0] * state_.ori[1]
-    + 2 * thrust * state_.ori[2] * state_.ori[3]
+  deriv.r.z = 2 * thrust * state.q.w * state.q.x
+    + 2 * thrust * state.q.y * state.q.z
     - k_gravity_;
   
-  float r_torque = input_.right * input_.right
-    - input_.left * input_.left;
-  float p_torque = input_.back * input_.back
-    - input_.front * input_.front;
-  float y_torque = input_.front * input_.front
-    + input_.back * input_.back
-    - input_.left * input_.left
-    - input_.right * input_.right;
+  float r_torque = input.right * input.right
+    - input.left * input.left;
+  float p_torque = input.back * input.back
+    - input.front * input.front;
+  float y_torque = input.front * input.front
+    + input.back * input.back
+    - input.left * input.left
+    - input.right * input.right;
   float k_moment = k_force_ / mass_ / radius_;
   
-  deriv.spin[0] = -state_.spin[1] * state_.spin[2]
+  deriv.w.x = -state.w.y * state.w.z
     + 2 * k_moment * r_torque;
 
-  deriv.spin[1] = state_.spin[0] * state_.spin[2]
+  deriv.w.y = state.w.x * state.w.z
     + 2 * k_moment * p_torque;
   
-  deriv.spin[2] = k_moment * y_torque;
+  deriv.w.z = k_moment * y_torque;
   return deriv;
 }
 void Model::update(const ros::TimerEvent& e)
 {
   ros::Time this_time = ros::Time::now();
-  float dt = this_time.toSec() - time_.toSec();
-  State deriv = Model::get_trajectory();
+  float dt = (this_time-time_).toSec();
+  State deriv = Model::get_trajectory(state_, input_);
   time_ = this_time;
-  for (int i = 0; i < 3; ++i) {
-    accel_[i] = deriv.vel[i];
-    state_.vel[i] += deriv.vel[i] * dt;
-    state_.pos[i] += deriv.pos[i] * dt;
-    state_.spin[i] += deriv.spin[i] * dt;
-  }
-  for (int i = 0; i < 4; ++i) {
-    state_.ori[i] += deriv.ori[i] * dt;
-  }
+  accel_ = deriv.v;
+
+  // Integration
+  state_.r.x += deriv.r.x * dt;
+  state_.r.y += deriv.r.y * dt;
+  state_.r.z += deriv.r.z * dt;
+  state_.v.x += deriv.v.x * dt;
+  state_.v.y += deriv.v.y * dt;
+  state_.v.z += deriv.v.z * dt;
+  state_.q.x += deriv.q.x * dt;
+  state_.q.y += deriv.q.y * dt;
+  state_.q.z += deriv.q.z * dt;
+  state_.q.w += deriv.q.w * dt;
+  state_.w.x += deriv.w.x * dt;
+  state_.w.y += deriv.w.y * dt;
+  state_.w.z += deriv.w.z * dt;
+
+  // Normalize quaternion
+  float norm2 = state_.q.x*state_.q.x + state_.q.y*state_.q.y
+    + state_.q.z*state_.q.z + state_.q.w*state_.q.w;
+  float inv_norm = 1.0 / sqrt(norm2);
+  state_.q.x *= inv_norm;
+  state_.q.y *= inv_norm;
+  state_.q.z *= inv_norm;
+  state_.q.w *= inv_norm;
 
   geometry_msgs::Pose new_pose;
-  new_pose.position.x = state_.pos[0];
-  new_pose.position.y = state_.pos[1];
-  new_pose.position.z = state_.pos[2];
-  new_pose.orientation = state_.ori;
-  return new_pose;
+  new_pose.position.x = state_.r.x; // convert Vector3 to Point
+  new_pose.position.y = state_.r.y;
+  new_pose.position.z = state_.r.z;
+  new_pose.orientation = state_.q;
+
+  pose_pub_.publish(new_pose);
 }
 } // namespace quadcopter

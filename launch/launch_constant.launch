@@ -10,7 +10,7 @@
     />
   <node
     pkg="quadcopter"
-    type="run_controller_const"
+    type="run_const_node"
     name="controller"
     output="screen"
     />
