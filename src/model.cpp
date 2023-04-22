@@ -167,7 +167,7 @@ void Model::update(const ros::TimerEvent& e)
   // Normalize quaternion
   float norm2 = state_.q.x*state_.q.x + state_.q.y*state_.q.y
     + state_.q.z*state_.q.z + state_.q.w*state_.q.w;
-  ROS_ASSERT_MSG(norm2 < 0.001, "Unable to normalize quaternion.  ||q||^2 = %d", norm2);
+  ROS_ASSERT_MSG(norm2 > 0.001, "Unable to normalize quaternion.  ||q||^2 = %f", norm2);
   float inv_norm = 1.0 / sqrt(norm2);
   state_.q.x *= inv_norm;
   state_.q.y *= inv_norm;
