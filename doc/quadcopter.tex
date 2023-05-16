@@ -1,5 +1,5 @@
 \documentclass[lettersize,journal]{IEEEtran}
-\usepackage{amsmath,amsfonts}
+\usepackage{amsmath, amsfonts}
 \usepackage{algorithmic}
 \usepackage{algorithm}
 \usepackage{array}
@@ -23,145 +23,128 @@
 %\end{abstract}
 
 \section{Introduction}
-\IEEEPARstart{T}{he} \texttt{quadcopter} package is filled with obtuse and often confusing code derived from various physics equations and mathematical formulas. This paper hopes to bridge the gap between quadcopter theory and the \texttt{src} files included. This paper can also be used as a reference for later expansion of this package.
+\IEEEPARstart{T}{he} \texttt{quadcopter} package is filled with obtuse and often confusing code derived from various physics equations and mathematical formulas.
+This paper hopes to bridge the gap between quadcopter theory and the \texttt{src} files included. 
+This paper can also be used as a reference for later expansion of this package.
 
 \section{The Model Node}
-While an actual quadcopter would be helpful, a simulation is the next best thing. The model node simulates the physics of a quadcopter. The physics in this section also provide insight on how motor input and sensor output behave.
+While an actual quadcopter would be helpful, a simulation is the next best thing.
+The model node simulates the physics of a quadcopter.
+The physics in this section also provide insight on how motor input and sensor output behave.
 
-\subsection{Rotational Kinetics}
-
-Quaternions are integral in understanding the implementation of the model node. Firstly, a vector in the inertial frame $N$ can be transformed and expressed in the robot frame $R$ by the quaternion $\mathrm{q}$:
+\subsection{Rotational Kinematics}
+Quaternions are integral in understanding the implementation of the model node.
+Derivations of quaternion operations can be found elsewhere, including on my GitHub.
+This paper will then focus on the implementation in the model node.
+There are multiple definitions for quaternion multiplication.
+The model node uses the same definition as the \texttt{tf2} ROS package.
 \begin{equation}
-	\mathbf{v}^R = \mathrm{q} \mathbf{v}^N \mathrm{q}^*
+    \begin{pmatrix}
+      x_1 \\
+      y_1 \\
+      z_1 \\
+      w_1
+    \end{pmatrix} \otimes 
+    \begin{pmatrix}
+      x_2 \\
+      y_2 \\
+      z_2 \\
+      w_2
+    \end{pmatrix} =
+    \begin{pmatrix}
+      w_1x_2 + x_1w_2 + y_1z_2 - z_1y_2 \\
+      w_1y_2 - x_1z_2 + y_1w_2 + z_1x_2 \\
+      w_1z_2 + x_1y_2 - y_1x_2 + z_1w_2 \\
+      w_1w_2 - x_1x_2 - y_1y_2 - z_1z_2
+    \end{pmatrix}
 \end{equation}
-
-That quaternion derivative can be updated via the angular velocity from robot frame to inertial frame $\boldsymbol\omega$ via
+The unit quaternion $\mathrm{q}$ describes the orientation of the robot by describing a transform between two frames
 \begin{equation}
-	\mathrm{\dot{q}} = \frac{1}{2} \boldsymbol\omega \mathrm{q}
+	\begin{pmatrix}
+	\mathbf{v}^B \\
+	0
+	\end{pmatrix}
+	= \mathrm{q} \otimes
+	\begin{pmatrix}
+	  \mathbf{v}^N \\
+		0
+	\end{pmatrix}
+		\mathrm{q}^* 
 \end{equation}
-
-Integrating over the unit 4-sphere:
+where $\mathbf{v}^N$ and $\mathbf{v}^B$ are the same vector described in an inertial frame $N$ and the robot body frame $B$ respectively.
+A rotation matrix is another description of rotations:
 \begin{equation}
-	\mathrm{q}[k+1] = \exp\left(\frac{1}{2}\boldsymbol\omega[k] \Delta t\right) \mathrm{q}[k]
+	\mathbf{v}^B = \mathrm{R}\left(\mathbf{v}^N\right)
 \end{equation}
-
-\begin{eqnarray}
-	\mathrm{q}_s = \cos\left(\frac{\left|\boldsymbol\omega\right|\Delta t}{2}\right)\nonumber\\
-	\mathrm{q}_v = \boldsymbol\omega \sin\left(\frac{\left|\boldsymbol\omega\right|\Delta t}{2}\right) \nonumber
-\end{eqnarray}
-
-\begin{eqnarray}
-  q_0[k+1] = -\exp\left(\frac{1}{2} \omega_0[k] \right)
-\end{eqnarray}
-
-
-
-Throughout this paper, I use notation of the sum of scaled unit vectors (versors), but coding is better described as \texttt{float}s. The dot product of vectors provides these scalars. The rotation matrices provide a way to move between these \texttt{array}s of \texttt{float}s. For example, consider the rotation matrix from basis $A$ to $B$.
+Importantly for the model node, rotation matrices collect the dot product of basis vectors: $\mathrm{R}_{ij} = \mathbf{\hat{b}}_i \cdot \mathbf{\hat{n}}_j$. In terms of quaternion $(x, y, z, w)$
 \begin{equation}
-  \begin{pmatrix}
-    \mathbf{v} \cdot \mathbf{\hat{b}}_x \\
-    \mathbf{v} \cdot \mathbf{\hat{b}}_y \\
-    \mathbf{v} \cdot \mathbf{\hat{b}}_z
-  \end{pmatrix}
-  =
-  {^\mathrm{B}R^\mathrm{A}}
-  \begin{pmatrix}
-    \mathbf{v} \cdot \mathbf{\hat{a}}_x \\
-    \mathbf{v} \cdot \mathbf{\hat{a}}_y \\
-    \mathbf{v} \cdot \mathbf{\hat{a}}_z
-  \end{pmatrix}
+	\mathrm{R}=\left(
+	\begin{smallmatrix}
+		x^2-y^2-z^2+w^2 & 2xy-2zw & 2xz+2yw \\
+    2xy+2zw & -x^2+y^2-z^2+w^2 & -2xw+2yz \\
+    2xz-2wy & 2xw+2yz & -x^2-y^2+z^2+w^2
+	\end{smallmatrix} 
+	\right) \label{EQN:RotationMatrix}
 \end{equation}
-
-The rotation matrices also collect the dot products to push final calculations down the road.
+That rate of change of the quaternion can be calculated from the angular velocity
 \begin{equation}
-  {^\mathrm{B}R^\mathrm{A}} = 
-  \begin{pmatrix}
-    \mathbf{\hat{a}}_x \cdot \mathbf{\hat{b}}_x &
-    \mathbf{\hat{a}}_y \cdot \mathbf{\hat{b}}_x &
-    \mathbf{\hat{a}}_z \cdot \mathbf{\hat{b}}_x \\
-    \mathbf{\hat{a}}_x \cdot \mathbf{\hat{b}}_y &
-    \mathbf{\hat{a}}_y \cdot \mathbf{\hat{b}}_y &
-    \mathbf{\hat{a}}_z \cdot \mathbf{\hat{b}}_y \\
-    \mathbf{\hat{a}}_x \cdot \mathbf{\hat{b}}_z &
-    \mathbf{\hat{a}}_y \cdot \mathbf{\hat{b}}_z &
-    \mathbf{\hat{a}}_z \cdot \mathbf{\hat{b}}_z
-  \end{pmatrix}
+	\mathrm{\dot{q}} = \frac{1}{2}
+	\begin{pmatrix}
+	  \boldsymbol\omega \\
+		0
+	\end{pmatrix}
+	\otimes \mathrm{q}
 \end{equation}
-
-The rotation of the quadcopter can be described by a composition of three rotations: from a Newtonian frame $N$ to $A$, by an angle $a$ around their common $x$ axis (the \emph{roll}); from intermediate frames $A$ to $B$, by angle $b$ around their common $y$ axis (the \emph{pitch}); and from $B$ to the quadcopter body frame $C$, by angle $c$ around their common $z$ axis (the \emph{yaw}). The angles and bases are chosen to make the angular velocities positive. On the quadcopter frame $\mathbf{\hat{c}}_x$ points to the front motor, $\mathbf{\hat{c}}_y$ points to the left motor, and $\mathbf{\hat{c}}_z$ is the cross product of the two.
-\begin{eqnarray}
-  {_\mathrm{N}\boldsymbol\omega_\mathrm{A}} =& \dot{a} \mathbf{\hat{n}}_x &= \dot{a} \mathbf{\hat{a}}_x \label{ARotVel}\\
-  {_\mathrm{A}\boldsymbol\omega_\mathrm{B}} =& \dot{b} \mathbf{\hat{a}}_y &= \dot{b} \mathbf{\hat{b}}_y\\
-  {_\mathrm{B}\boldsymbol\omega_\mathrm{C}} =& \dot{c} \mathbf{\hat{b}}_z &= \dot{c} \mathbf{\hat{c}}_z \label{CRotVel}
-\end{eqnarray}
-
-Using the notation of the rotation matrices above, the composition of rotation matrices is the matrix product.
+where $\boldsymbol\omega$ is the angular velocity of the robot body $B$ in the inertial frame $N$ described in the body basis:
 \begin{equation}
-  {^\mathrm{C}R^\mathrm{N}} = \left({^\mathrm{C}R^\mathrm{B}}\right)\left({^\mathrm{B}R^\mathrm{A}}\right)\left({^\mathrm{A}R^\mathrm{N}}\right)
+	\boldsymbol\omega = \omega_x \mathbf{\hat{b}}_x + \omega_y \mathbf{\hat{b}}_y + \omega_z \mathbf{\hat{b}}_z \label{EQN:AngularVelocity}
 \end{equation}
-
-The important combinations of dot products can be found in tables \ref{InertialTransforms} and \ref{RobotTransforms}. 
-\begin{table}[!t] \centering
-  \caption{Transforms from the inertial frame $\mathrm{N}$\\($s_x = \sin x$, $c_x = \cos x$)}
-  \begin{tabular}{c|ccc}
-    $^\mathrm{U}R^\mathrm{N}$ & $\mathbf{\hat{n}}_x$ & $\mathbf{\hat{n}}_y$ & $\mathbf{\hat{n}}_z$ \\
-    \hline
-    $\mathbf{\hat{a}}_x$ & $1$ & $0$ & $0$\\
-    $\mathbf{\hat{a}}_y$ & $0$ & $c_a$ & $s_a$\\
-    $\mathbf{\hat{a}}_z$ & $0$ & $-s_a$ & $c_a$\\
-    \hline
-    $\mathbf{\hat{b}}_x$ & $c_b$ & $s_as_b$ & $-s_ac_a$\\
-    $\mathbf{\hat{b}}_y$ & $0$ & $c_a$ & $s_a$\\
-    $\mathbf{\hat{b}}_z$ & $s_b$ & $-s_a c_b$ & $c_a c_b$\\
-    \hline
-    $\mathbf{\hat{c}}_x$ & $c_b c_c$ & $-c_a s_c + s_a s_b c_c$ & $-s_a s_c - c_a s_b c_c$\\
-    $\mathbf{\hat{c}}_y$ & $c_b s_c$ & $c_a c_c + s_a s_b s_c$ & $s_a c_c - c_a s_b s_c$\\
-    $\mathbf{\hat{c}}_z$ & $s_b$ & $-s_a c_b$ & $c_a c_b$
-  \end{tabular} \label{InertialTransforms}
-\end{table}
-
-\begin{table}[!t] \centering
-  \caption{Transforms from the robot frame $\mathrm{C}$\\($s_x = \sin x$, $c_x = \cos x$)}
-  \begin{tabular}{c|ccc}
-    $^\mathrm{U}R^\mathrm{C}$ & $\mathbf{\hat{c}}_x$ & $\mathbf{\hat{c}}_y$ & $\mathbf{\hat{c}}_z$ \\
-    \hline
-    $\mathbf{\hat{b}}_x$ & $c_c$ & $s_c$ & $0$ \\
-    $\mathbf{\hat{b}}_y$ & $-s_c$ & $c_c$ & $0$ \\
-    $\mathbf{\hat{b}}_z$ & $0$ & $0$ & $1$ \\
-    \hline
-    $\mathbf{\hat{a}}_x$ & $c_b c_c$ & $c_b s_c$ & $s_b$ \\
-    $\mathbf{\hat{a}}_y$ & $-s_c$ & $c_c$ & $0$ \\
-    $\mathbf{\hat{a}}_z$ & $s_b c_c$ & $-s_b s_c$ & $c_b$ \\
-    \hline
-    $\mathbf{\hat{n}}_x$ & $c_b c_c$ & $c_b s_c$ & $s_b$ \\
-    $\mathbf{\hat{n}}_y$ & $-c_a s_c + s_a s_b s_c$ & $c_a c_c + s_a s_b s_c$ & $-s_a c_b$ \\
-    $\mathbf{\hat{n}}_z$ & $-s_a s_c-c_a s_b c_c$ & $s_a c_c - c_a s_b s_c$ & $c_a c_b$
-  \end{tabular} \label{RobotTransforms}
-\end{table}
+Currently the model node uses a linear interpolation
+\begin{equation}
+	\mathrm{q}[k+1] = \mathrm{q}[k] + 
+		\begin{pmatrix}
+		\boldsymbol\omega[k] \\
+		0
+	\end{pmatrix} \otimes
+	\mathrm{q}[k] \Delta t
+\end{equation}
+Or 
+\begin{equation}
+	\frac{\Delta \mathrm{q}}{\Delta t} =
+	\begin{pmatrix}
+	-\omega_z q_y + \omega_y q_z + \omega_x q_w \nonumber \\
+  \omega_z q_x - \omega_x q_z + \omega_y q_w \nonumber \\
+  -\omega_y q_x + \omega_x q_y + \omega_z q_w \nonumber \\
+  - \omega_x q_x - \omega_y q_y - \omega_z q_z
+	\end{pmatrix}
+\end{equation}
+This most simple integration method (Euler's Method) is fast to implement, but More accurate methods like Runge-Kutta or Crouch-Grossman could improve the accuracy. However they shouldn't be unneeded. Those algorithms can be more computationally intensive, and it's just a model.
 
 \subsection{Linear Equations of Motion}
 If you choose the right reference frames the linear equations of motion are easy to express. First, the motion of the quadcopter from its origin point is defined simply:
 \begin{eqnarray}
-  \mathbf{r}_{c/o} &=& x \mathbf{\hat{n}}_x + y \mathbf{\hat{n}}_y + z \mathbf{\hat{n}}_z \\
-  {_\mathrm{N}\mathbf{v}_c} &=& \dot{x} \mathbf{\hat{n}}_x + \dot{y} \mathbf{\hat{n}}_y + \dot{z} \mathbf{\hat{n}}_z \\
-  {_\mathrm{N}\mathbf{a}_c} &=& \ddot{x} \mathbf{\hat{n}}_x + \ddot{y} \mathbf{\hat{n}}_y + \ddot{z} \mathbf{\hat{n}}_z
+  \mathbf{r}^N_c &=& r_x \mathbf{\hat{n}}_x + r_y \mathbf{\hat{n}}_y + r_z \mathbf{\hat{n}}_z \\
+  \mathbf{v}^N_c &=& \dot{r}_x \mathbf{\hat{n}}_x + \dot{r}_y \mathbf{\hat{n}}_y + \dot{r}_z \mathbf{\hat{n}}_z \\
+  \mathbf{a}^N_c &=& \ddot{r}_x \mathbf{\hat{n}}_x + \ddot{r}_y \mathbf{\hat{n}}_y + \ddot{r}_z \mathbf{\hat{n}}_z
 \end{eqnarray}
-
-For our model we assume each motor puts out a force proportional to its square. If we let $m$ be the total mass of the robot and $k$ be the proportionality constant:
+For our model we assume each motor puts out a force proportional to its square.
+If we let $m$ be the total mass of the robot and $k$ be the proportionality constant:
 \begin{equation}
-  m{_\mathrm{N}\mathbf{a}_c} = k \left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right) \mathbf{\hat{c}}_y - mg \mathbf{\hat{n}}_y
+  m\mathbf{a}^N_c = k \left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right) \mathbf{\hat{c}}_y - mg \mathbf{\hat{n}}_y
 \end{equation}
-Where $f$, $l$, $b$, and $r$ stand for the front, right, back and left motors respectively. Expressed in the inertial frame $N$ the equations of motion are:
+Where $f$, $l$, $b$, and $r$ stand for the front, right, back and left motors respectively. 
+By converting to the dot product via equation \ref{EQN:RotationMatrix}
 \begin{eqnarray}
-  \ddot{x} &=& \frac{k}{m} \Omega \cos b \sin c \\
-  \ddot{y} &=& \frac{k}{m} \Omega \cos a \cos c + \frac{k}{m} \Omega \sin a \sin b \sin c - g\\
-  \ddot{z} &=& \frac{k}{m} \Omega \sin a \cos c - \frac{k}{m} \Omega \cos a \sin b \sin c 
+  \ddot{r}_x &=& 2Tq_xq_y+2Tq_zq_w \\
+  \ddot{r}_y &=& -Tx^2+Ty^2-Tz^2+Tw^2 - g\\
+  \ddot{r}_z &=& -2Tq_xq_w+2Tq_yq_z 
 \end{eqnarray}
-where $\Omega$ is the sum of the squares of the motor inputs.
+where $T$ is the specific motor thrust
+\begin{equation}
+	T = \frac{k}{m}\left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right)
+\end{equation}
 
-
-
-\section{Rotational Momentum}
+\subsection{Rotational Equations of Motion}
 Supposing that most of the mass of the quadcopter is in the motors, the inertia dyadics for the four motors is:
 \begin{eqnarray}
   \mathbf{I}^{f/c} &=& \frac{mL^2}{4} \mathbf{\hat{c}}_y\mathbf{\hat{c}}_y + \frac{mL^2}{4} \mathbf{\hat{c}}_z \mathbf{\hat{c}}_z \\
@@ -169,17 +152,15 @@ Supposing that most of the mass of the quadcopter is in the motors, the inertia 
   \mathbf{I}^{b/c} &=& \frac{mL^2}{4} \mathbf{\hat{c}}_y\mathbf{\hat{c}}_y + \frac{mL^2}{4} \mathbf{\hat{c}}_z \mathbf{\hat{c}}_z \\
   \mathbf{I}^{r/c} &=& \frac{mL^2}{4} \mathbf{\hat{c}}_x\mathbf{\hat{c}}_x + \frac{mL^2}{4} \mathbf{\hat{c}}_z \mathbf{\hat{c}}_z
 \end{eqnarray}
-
 The total inertial dyadic of the robot is then
 \begin{equation}
   \mathbf{I}^{R/c} = \frac{mL^2}{2} \left(\mathbf{\hat{c}}_x\mathbf{\hat{c}}_x + \mathbf{\hat{c}}_y\mathbf{\hat{c}}_y + 2 \mathbf{\hat{c}}_z\mathbf{\hat{c}}_z\right)
 \end{equation}
-
-The angular velocity is the compositions of simple velocities given in equations \ref{ARotVel}-\ref{CRotVel}.
-\begin{equation}
-  {_\mathrm{N}\boldsymbol\omega_C} = \dot{a}\mathbf{\hat{a}}_x + \dot{b} \mathbf{\hat{b}}_y + \dot{c} \mathbf{\hat{c}}_z
-\end{equation}
-
+The angular velocity was given in \ref{EQN:AngularVelocity}, and the angular acceleration is just the derivative
+\begin{align}
+  {\boldsymbol\omega^N_B} &= \omega_x\mathbf{\hat{b}}_x + \omega_y\mathbf{\hat{b}}_y + \omega_c \mathbf{\hat{b}}_z \nonumber \\
+	{\boldsymbol\alpha^N_B} &= \dot\omega_x\mathbf{\hat{b}}_x + \dot\omega_y\mathbf{\hat{b}}_y + d\dot\omega_c \mathbf{\hat{b}}_z
+\end{align}
 And the angular momentum is the dot product of the two
 \begin{eqnarray}
   {^\mathrm{N}\mathbf{H}^{R/c}} &=& \mathbf{I}^{R/c} \cdot {_\mathrm{N}\boldsymbol\omega_\mathrm{C}}\nonumber\\
@@ -243,4 +224,3 @@ Quaternions are one such valuable representation.
 % \vfill
 
 \end{document}
-
