@@ -93,7 +93,7 @@ That rate of change of the quaternion can be calculated from the angular velocit
 	  \boldsymbol\omega \\
 		0
 	\end{pmatrix}
-	\otimes \mathrm{q}
+	\otimes \mathrm{q} \label{EQN:QuaternionVelocity}
 \end{equation}
 where $\boldsymbol\omega$ is the angular velocity of the robot body $B$ in the inertial frame $N$ described in the body basis:
 \begin{equation}
@@ -150,21 +150,22 @@ Quadcopters move laterally by rolling or pitching (rotation around the $x$ and $
 \begin{align}
 	\mathbf{M}_{B/c} &= r \mathbf{\hat{b}}_x \times k\omega_f^2 \mathbf{\hat{b}}_z - r\mathbf{\hat{b}}_x \times k\omega_b^2 \mathbf{\hat{b}}_z \nonumber \\
 	&+ r\mathbf{\hat{b}}_y\times k\omega_l^2 \mathbf{\hat{b}}_z  - r\mathbf{\hat{b}}_y \times k\omega_r^2 \mathbf{\hat{b}}_z\\
-	&= rk \left(\omega_l^2-\omega_r^2\right) \mathbf{\hat{b}}_x+ rk\left(\omega_b^2-\omega_f^2\right) \mathbf{\hat{b}}_y
+	&= kr \left(\omega_l^2-\omega_r^2\right) \mathbf{\hat{b}}_x+ kr\left(\omega_b^2-\omega_f^2\right) \mathbf{\hat{b}}_y
 \end{align}
-Adjacent quadcopter propellers have reverse pitch, so that together they can provide a yaw torque (around the $z$ axis) in either direction; without it quadcopters would have to choose to fall or rotate.
-\begin{equation}
-	\boldsymbol\tau = 
-\end{equation}
-
-\subsection{Numerical Integration}
-Before we derive any differential equations, lets define some intermediate variables
+For sanity sake, let's show that the other force acting on the motors, gravity, does not affect the rotation
 \begin{align}
-	T_l &= \frac{k}{m} \left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right) \\
-	T_x &= \\
-	T_y &= \\
-	T_z &=
+	-r\mathbf{\hat{b}}_x \times \frac{mg}{4} \mathbf{\hat{n}}_z+r\mathbf{\hat{b}}_x \times \frac{mg}{4} \mathbf{\hat{n}}_z &= \mathbf{0} \nonumber \\
+	-r\mathbf{\hat{b}}_y \times \frac{mg}{4} \mathbf{\hat{n}}_z+r\mathbf{\hat{b}}_y \times \frac{mg}{4} \mathbf{\hat{n}}_z  &= \mathbf{0} \nonumber  
 \end{align}
+As long as the weight of the quadcopter is balanced along the axes, gravity should not affect the rotation. Adjacent quadcopter propellers have reverse pitch, so that together they can provide a yaw torque (around the $z$ axis) in either direction; without it quadcopters would have to choose to fall or rotate. Choosing the front and rear motors to provide positive torque
+\begin{equation}
+	\boldsymbol\tau = b\left(\omega_f^2-\omega_r^2+\omega_b^2-\omega_l^2\right)\mathbf{\hat{b}}_z
+\end{equation}
+The last couple equations combine to form the rotational equations of motion
+\begin{equation}
+	\frac{^Nd}{dt}\mathbf{H}^N_{B/c} = \mathbf{M}_{B/c} + \boldsymbol\tau
+\end{equation}
+\subsection{Numerical Integration}
 The first differential equations are the easiest differential equations. Define $v_i = \dot{r}_i$. Then $\dot{v}_i=\ddot{p}_i$ and
 \begin{align}
 	\dot{p}_x &= v_x \\
@@ -181,20 +182,17 @@ By taking the dot product with the inertial basis $N$ via equation \ref{EQN:Rota
 	\dot{v}_y &= 2Tq_xq_w+2q_yq_z \\
 	\dot{v}_z &= -Tq_x^2-Tq_y^2+Tq_z^2+Tq_w^2
 \end{align}
-where $T$ is the specific motor thrust
+where $T$ is the specific motor thrust.
 \begin{equation}
 	T = \frac{k}{m}\left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right)
 \end{equation}
-Currently the model node uses a linear interpolation
-\begin{equation}
-	\mathrm{q}[k+1] = \mathrm{q}[k] + 
-		\begin{pmatrix}
-		\boldsymbol\omega[k] \\
-		0
-	\end{pmatrix} \otimes
-	\mathrm{q}[k] \Delta t
-\end{equation}
-Or 
+The rotational equations come out nicely since we chose to derive our equations in the robot frame
+\begin{align}
+	\dot{\omega}_x &= \omega_y\omega_z+\frac{2k}{mr}\left(\omega_l^2-\omega_r^2\right) \\
+	\dot{\omega}_y &= \omega_x\omega_z+\frac{2k}{mr}\left(\omega_b^2-\omega_f^2\right) \\
+	\dot{\omega}_z &= \frac{b}{mr^2}\left(\omega_f^2-\omega_r^2+\omega_b^2-\omega_l^2\right)
+\end{align}
+Expanding equation \ref{EQN:QuaternionVelocity} gives the final four equations
 \begin{align}
 	\dot{q}_x &= -\omega_z q_y + \omega_y q_z + \omega_x q_w \\
   \dot{q}_y &= \omega_z q_x - \omega_x q_z + \omega_y q_w  \\
