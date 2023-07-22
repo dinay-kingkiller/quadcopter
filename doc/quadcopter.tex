@@ -24,8 +24,8 @@
 
 \section{Introduction}
 \IEEEPARstart{T}{he} \texttt{quadcopter} package is filled with obtuse and often confusing code derived from various physics equations and mathematical formulas.
-This paper hopes to bridge the gap between quadcopter theory and the \texttt{src} files included. 
-This paper can also be used as a reference for later expansion of this package.
+This paper hopes to bridge the gap between quadcopter theory and the \texttt{src} files included.
+This paper can then also be used as a reference for later expansion of this package.
 
 \section{The Model Node}
 While an actual quadcopter would be helpful, a simulation is the next best thing.
@@ -39,72 +39,74 @@ This paper will then focus on the implementation in the model node.
 There are multiple definitions for quaternion multiplication.
 The model node uses the same definition as the \texttt{tf2} ROS package.
 \begin{equation}
-    \begin{pmatrix}
-      x_1 \\
-      y_1 \\
-      z_1 \\
-      w_1
-    \end{pmatrix} \otimes 
-    \begin{pmatrix}
-      x_2 \\
-      y_2 \\
-      z_2 \\
-      w_2
-    \end{pmatrix} =
-    \begin{pmatrix}
-      w_1x_2 + x_1w_2 + y_1z_2 - z_1y_2 \\
-      w_1y_2 - x_1z_2 + y_1w_2 + z_1x_2 \\
-      w_1z_2 + x_1y_2 - y_1x_2 + z_1w_2 \\
-      w_1w_2 - x_1x_2 - y_1y_2 - z_1z_2
-    \end{pmatrix}
+  \begin{pmatrix}
+    x_1 \\
+    y_1 \\
+    z_1 \\
+    w_1
+  \end{pmatrix} \otimes
+  \begin{pmatrix}
+    x_2 \\
+    y_2 \\
+    z_2 \\
+    w_2
+  \end{pmatrix} =
+  \begin{pmatrix}
+    w_1x_2 + x_1w_2 + y_1z_2 - z_1y_2 \\
+    w_1y_2 - x_1z_2 + y_1w_2 + z_1x_2 \\
+    w_1z_2 + x_1y_2 - y_1x_2 + z_1w_2 \\
+    w_1w_2 - x_1x_2 - y_1y_2 - z_1z_2
+  \end{pmatrix}
 \end{equation}
 The unit quaternion $\mathrm{q}$ describes the orientation of the robot by describing a transform between two frames
 \begin{equation}
-	\begin{pmatrix}
-	\mathbf{v}^B \\
-	0
-	\end{pmatrix}
-	= \mathrm{q} \otimes
-	\begin{pmatrix}
-	  \mathbf{v}^N \\
-		0
-	\end{pmatrix}
-		\mathrm{q}^* 
+  \begin{pmatrix}
+    
+    \mathbf{v}^B \\
+    0
+  \end{pmatrix}
+  = \mathrm{q} \otimes
+  \begin{pmatrix}
+    \mathbf{v}^N \\
+    0
+  \end{pmatrix}\otimes
+  \mathrm{q}^*
 \end{equation}
 where $\mathbf{v}^N$ and $\mathbf{v}^B$ are the same vector described in an inertial frame $N$ and the robot body frame $B$ respectively.
 A rotation matrix is another description of rotations:
 \begin{equation}
-	\mathbf{v}^B = \mathrm{R}\left(\mathbf{v}^N\right)
+  \mathbf{v}^B = \mathrm{R}\left(\mathbf{v}^N\right)
 \end{equation}
 Importantly for the model node, rotation matrices collect the dot product of basis vectors: $\mathrm{R}_{ij} = \mathbf{\hat{b}}_i \cdot \mathbf{\hat{n}}_j$. In terms of quaternion $(x, y, z, w)$
 \begin{equation}
-	\mathrm{R}=\left(
-	\begin{smallmatrix}
-		x^2-y^2-z^2+w^2 & 2xy-2zw & 2xz+2yw \\
+  \mathrm{R}=\left(
+  \begin{smallmatrix}
+    x^2-y^2-z^2+w^2 & 2xy-2zw & 2xz+2yw \\
     2xy+2zw & -x^2+y^2-z^2+w^2 & -2xw+2yz \\
     2xz-2wy & 2xw+2yz & -x^2-y^2+z^2+w^2
-	\end{smallmatrix} 
-	\right) \label{EQN:RotationMatrix}
+  \end{smallmatrix} 
+  \right) \label{EQN:RotationMatrix}
 \end{equation}
 That rate of change of the quaternion can be calculated from the angular velocity
 \begin{equation}
-	\mathrm{\dot{q}} = \frac{1}{2}
-	\begin{pmatrix}
-	  \boldsymbol\omega \\
-		0
-	\end{pmatrix}
-	\otimes \mathrm{q} \label{EQN:QuaternionVelocity}
+  \mathrm{\dot{q}} = \frac{1}{2}
+  \begin{pmatrix}
+    \boldsymbol\omega \\
+    0
+  \end{pmatrix}
+  \otimes \mathrm{q} \label{EQN:QuaternionVelocity}
 \end{equation}
 where $\boldsymbol\omega$ is the angular velocity of the robot body $B$ in the inertial frame $N$ described in the body basis:
 \begin{equation}
-	\boldsymbol\omega = \omega_x \mathbf{\hat{b}}_x + \omega_y \mathbf{\hat{b}}_y + \omega_z \mathbf{\hat{b}}_z \label{EQN:AngularVelocity}
+  \boldsymbol\omega = \omega_x \mathbf{\hat{b}}_x + \omega_y \mathbf{\hat{b}}_y + \omega_z \mathbf{\hat{b}}_z \label{EQN:AngularVelocity}
 \end{equation}
 \subsection{Linear Equations of Motion}
-The linear equations of motion are pretty apparent upon starting our analysis. First, the motion of the quadcopter center of mass $c$ from its origin point $o$ is defined simply:
+The linear equations of motion are pretty apparent upon starting our analysis.
+First, the motion of the quadcopter center of mass $c$ from its origin point $o$ is defined simply:
 \begin{align}
-  \mathbf{p}^N_{c/o} &= p_x \mathbf{\hat{n}}_x + p_y \mathbf{\hat{n}}_y + p_z \mathbf{\hat{n}}_z \\
+  \mathbf{p}_{c/o} &= p_x \mathbf{\hat{n}}_x + p_y \mathbf{\hat{n}}_y + p_z \mathbf{\hat{n}}_z \\
   \mathbf{v}^N_c &= \dot{p}_x \mathbf{\hat{n}}_x + \dot{p}_y \mathbf{\hat{n}}_y + \dot{p}_z \mathbf{\hat{n}}_z \\
-  \mathbf{a}^N_c &= \ddot{p}_x \mathbf{\hat{n}}_x + \ddot{p}_y \mathbf{\hat{n}}_y + \ddot{p}_z \mathbf{\hat{n}}_z
+  \mathbf{a}^N_c &= \ddot{p}_x \mathbf{\hat{n}}_x + \ddot{p}_y \mathbf{\hat{n}}_y + \ddot{p}_z \mathbf{\hat{n}}_z \label{EQN:Acceleration}
 \end{align}
 For our model we assume each motor puts out a force proportional to its square.
 If we let $m$ be the total mass of the robot and $k$ be the proportionality constant:
@@ -132,102 +134,100 @@ The angular velocity was given in equation \ref{EQN:AngularVelocity}.
 The angular acceleration comes out simple because of our choice of reference frame
 \begin{align}
   \boldsymbol\alpha^N_B &= \frac{^B d}{dt} \boldsymbol\omega^N_B +\boldsymbol\omega_B^N\times\boldsymbol\omega_B^N\nonumber\\
-	&= \dot\omega_x \mathbf{\hat{b}}_x + \dot\omega_y \mathbf{\hat{b}}_y + \dot\omega_z \mathbf{\hat{b}}_z
+  &= \dot\omega_x \mathbf{\hat{b}}_x + \dot\omega_y \mathbf{\hat{b}}_y + \dot\omega_z \mathbf{\hat{b}}_z
 \end{align}
 And the angular momentum around the center of mass $c$ is pretty nice too
 \begin{align}
   {\mathbf{H}^N_{B/c}}
-	&= \mathbf{I}_{B/c} \cdot \omega_B^N\nonumber \\
-	&= \frac{mr^2}{2}\omega_x\mathbf{\hat{b}}_x + \frac{mr^2}{2}\omega_y\mathbf{\hat{b}}_y + mr^2\omega_z \mathbf{\hat{b}}_z
+  &= \mathbf{I}_{B/c} \cdot \boldsymbol\omega_B^N\nonumber \\
+  &= \frac{mr^2}{2}\omega_x\mathbf{\hat{b}}_x + \frac{mr^2}{2}\omega_y\mathbf{\hat{b}}_y + mr^2\omega_z \mathbf{\hat{b}}_z
 \end{align}
 And the derivative is
 \begin{align}
-	\frac{^Nd}{dt}\mathbf{H}^N_{B/c} &= \mathbf{I}\cdot\boldsymbol\alpha^N_B + \boldsymbol\omega^N_B \times \mathbf{H}^N_{B/c} \nonumber\\
-	&= \frac{mr^2}{2}\dot\omega_x \mathbf{\hat{b}}_x + \frac{mr^2}{2}\dot\omega_y \mathbf{\hat{b}}_y + mr^2\dot\omega_y \mathbf{\hat{b}}_z \nonumber \\ 
-	&+\frac{mr^2}{2}\omega_y \omega_z \mathbf{\hat{b}}_x - \frac{mr^2}{2} \omega_x\omega_z \mathbf{\hat{b}}_y
+  \frac{^Nd}{dt}\mathbf{H}^N_{B/c} &= \mathbf{I}\cdot\boldsymbol\alpha^N_B + \boldsymbol\omega^N_B \times \mathbf{H}^N_{B/c} \nonumber\\
+  &= \frac{mr^2}{2}\dot\omega_x \mathbf{\hat{b}}_x + \frac{mr^2}{2}\dot\omega_y \mathbf{\hat{b}}_y + mr^2\dot\omega_y \mathbf{\hat{b}}_z \nonumber \\ 
+  &+\frac{mr^2}{2}\omega_y \omega_z \mathbf{\hat{b}}_x - \frac{mr^2}{2} \omega_x\omega_z \mathbf{\hat{b}}_y \label{EQN:AngMomDer}
 \end{align}
-Quadcopters move laterally by rolling or pitching (rotation around the $x$ and $y$ axes respectively) then increasing thrust to go ``up''. A simple rotation around a single axis is generated by increasing the speed on one propeller and decreasing its opposite. The moment of these forces provides a torque to the robot. All forces point up, so
+Quadcopters move laterally by rolling or pitching (rotation around the $x$ and $y$ axes respectively) and increasing thrust to go ``up''. A simple rotation around a single axis is generated by increasing the speed on one propeller and decreasing its opposite. The moment of these forces provides a torque to the robot. All forces point up, so
 \begin{align}
-	\mathbf{M}_{B/c} &= r \mathbf{\hat{b}}_x \times k\omega_f^2 \mathbf{\hat{b}}_z - r\mathbf{\hat{b}}_x \times k\omega_b^2 \mathbf{\hat{b}}_z \nonumber \\
-	&+ r\mathbf{\hat{b}}_y\times k\omega_l^2 \mathbf{\hat{b}}_z  - r\mathbf{\hat{b}}_y \times k\omega_r^2 \mathbf{\hat{b}}_z\\
-	&= kr \left(\omega_l^2-\omega_r^2\right) \mathbf{\hat{b}}_x+ kr\left(\omega_b^2-\omega_f^2\right) \mathbf{\hat{b}}_y
+  \mathbf{M}_{B/c} &= r \mathbf{\hat{b}}_x \times k\omega_f^2 \mathbf{\hat{b}}_z - r\mathbf{\hat{b}}_x \times k\omega_b^2 \mathbf{\hat{b}}_z \nonumber \\
+  &+ r\mathbf{\hat{b}}_y\times k\omega_l^2 \mathbf{\hat{b}}_z  - r\mathbf{\hat{b}}_y \times k\omega_r^2 \mathbf{\hat{b}}_z\nonumber\\
+  &= kr \left(\omega_l^2-\omega_r^2\right) \mathbf{\hat{b}}_x+ kr\left(\omega_b^2-\omega_f^2\right) \mathbf{\hat{b}}_y
 \end{align}
 For sanity sake, let's show that the other force acting on the motors, gravity, does not affect the rotation
 \begin{align}
-	-r\mathbf{\hat{b}}_x \times \frac{mg}{4} \mathbf{\hat{n}}_z+r\mathbf{\hat{b}}_x \times \frac{mg}{4} \mathbf{\hat{n}}_z &= \mathbf{0} \nonumber \\
-	-r\mathbf{\hat{b}}_y \times \frac{mg}{4} \mathbf{\hat{n}}_z+r\mathbf{\hat{b}}_y \times \frac{mg}{4} \mathbf{\hat{n}}_z  &= \mathbf{0} \nonumber  
+  -r\mathbf{\hat{b}}_x \times \frac{mg}{4} \mathbf{\hat{n}}_z+r\mathbf{\hat{b}}_x \times \frac{mg}{4} \mathbf{\hat{n}}_z &= \mathbf{0} \nonumber \\
+  -r\mathbf{\hat{b}}_y \times \frac{mg}{4} \mathbf{\hat{n}}_z+r\mathbf{\hat{b}}_y \times \frac{mg}{4} \mathbf{\hat{n}}_z	&= \mathbf{0} \nonumber	 
 \end{align}
 As long as the weight of the quadcopter is balanced along the axes, gravity should not affect the rotation. Adjacent quadcopter propellers have reverse pitch, so that together they can provide a yaw torque (around the $z$ axis) in either direction; without it quadcopters would have to choose to fall or rotate. Choosing the front and rear motors to provide positive torque
 \begin{equation}
-	\boldsymbol\tau = b\left(\omega_f^2-\omega_r^2+\omega_b^2-\omega_l^2\right)\mathbf{\hat{b}}_z
+  \boldsymbol\tau = b\left(\omega_f^2-\omega_r^2+\omega_b^2-\omega_l^2\right)\mathbf{\hat{b}}_z
 \end{equation}
 The last couple equations combine to form the rotational equations of motion
 \begin{equation}
-	\frac{^Nd}{dt}\mathbf{H}^N_{B/c} = \mathbf{M}_{B/c} + \boldsymbol\tau
+  \frac{^Nd}{dt}\mathbf{H}^N_{B/c} = \mathbf{M}_{B/c} + \boldsymbol\tau \label{EQN:RotationalEOM}
 \end{equation}
 \subsection{Numerical Integration}
-The first differential equations are the easiest differential equations. Define $v_i = \dot{r}_i$. Then $\dot{v}_i=\ddot{p}_i$ and
+The first differential equations are the easiest differential equations. Define the velocities $v_i = \dot{r}_i$. Then $\dot{v}_i=\ddot{p}_i$ and
 \begin{align}
-	\dot{p}_x &= v_x \\
-	\dot{p}_y &= v_y \\
-	\dot{p}_z &= v_z
+  \dot{p}_x &= v_x \label{EQN:VelocityX}\\
+  \dot{p}_y &= v_y \\
+  \dot{p}_z &= v_z \label{EQN:VelocityZ}
 \end{align}
-Recall the linear equation of motion in equation \ref{EQN:LinearEOM}.
-\begin{equation}
-  m\mathbf{a}^N_c = k \left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right) \mathbf{\hat{b}}_z - mg \mathbf{\hat{n}}_z \nonumber
-\end{equation}
-By taking the dot product with the inertial basis $N$ via equation \ref{EQN:RotationMatrix}, we get our second set of equations of motion
+Using the linear equation of motion (equation \ref{EQN:LinearEOM}), we can take the dot product with respect to inerial basis $N$.
+Recall that the rotation matrix given in equation \ref{EQN:RotationMatrix} collects the dot products between the two bases.
+Then, the second set of differential equations becomes
 \begin{align}
-	\dot{v}_x &= 2Tq_xq_z-2Tq_wq_y \\
-	\dot{v}_y &= 2Tq_xq_w+2q_yq_z \\
-	\dot{v}_z &= -Tq_x^2-Tq_y^2+Tq_z^2+Tq_w^2
+  \dot{v}_x &= 2Tq_xq_z-2Tq_wq_y \\
+  \dot{v}_y &= 2Tq_xq_w+2q_yq_z \\
+  \dot{v}_z &= -Tq_x^2-Tq_y^2+Tq_z^2+Tq_w^2
 \end{align}
 where $T$ is the specific motor thrust.
 \begin{equation}
-	T = \frac{k}{m}\left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right)
+  T = \frac{k}{m}\left(\omega_f^2 + \omega_l^2 + \omega_b^2 + \omega_r^2\right)
 \end{equation}
-The rotational equations come out nicely since we chose to derive our equations in the robot frame
+The next set of differential equations come from combining the rotational equations of motion (equations \ref{EQN:AngMomDer}-\ref{EQN:RotationalEOM}).
+Again, we use the rotation matrix given in equation \ref{EQN:RotationMatrix}, but this time we take the dot products in the robot frame $B$.
+The rotational equations then come out not terribly complicated
 \begin{align}
-	\dot{\omega}_x &= \omega_y\omega_z+\frac{2k}{mr}\left(\omega_l^2-\omega_r^2\right) \\
-	\dot{\omega}_y &= \omega_x\omega_z+\frac{2k}{mr}\left(\omega_b^2-\omega_f^2\right) \\
-	\dot{\omega}_z &= \frac{b}{mr^2}\left(\omega_f^2-\omega_r^2+\omega_b^2-\omega_l^2\right)
+  \dot{\omega}_x &= \omega_y\omega_z+\frac{2k}{mr}\left(\omega_l^2-\omega_r^2\right) \\
+  \dot{\omega}_y &= \omega_x\omega_z+\frac{2k}{mr}\left(\omega_b^2-\omega_f^2\right) \\
+  \dot{\omega}_z &= \frac{b}{mr^2}\left(\omega_f^2-\omega_r^2+\omega_b^2-\omega_l^2\right)
 \end{align}
-Expanding equation \ref{EQN:QuaternionVelocity} gives the final four equations
+Expanding the quaternion differential equation (equation  \ref{EQN:QuaternionVelocity}) we get the final four differential equations.
 \begin{align}
-	\dot{q}_x &= -\omega_z q_y + \omega_y q_z + \omega_x q_w \\
+  \dot{q}_x &= -\omega_z q_y + \omega_y q_z + \omega_x q_w \\
   \dot{q}_y &= \omega_z q_x - \omega_x q_z + \omega_y q_w  \\
   \dot{q}_z &= -\omega_y q_x + \omega_x q_y + \omega_z q_w \\
   \dot{q}_w &=- \omega_x q_x - \omega_y q_y - \omega_z q_z
 \end{align}
-This most simple integration method (Euler's Method) is fast to implement, but More accurate methods like Runge-Kutta or Crouch-Grossman could improve the accuracy. However they shouldn't be unneeded. Those algorithms can be more computationally intensive, and it's just a model.
+The quadcopter model uses most simple integration method (Euler's Method), which is fast to implement, but more accurate methods like Runge-Kutta or Crouch-Grossman could improve the accuracy.
+However that shouldn't be needed.
+Those algorithms can be more computationally intensive, and the model node just needs to approximate the motion of a quadcopter.
+For all the non-linear differential equations $\dot{u}=f\left[\mathbf{u}\right]$, the discrete solutions are modeled as
+\begin{equation}
+  u\left(t+\Delta t\right) = u\left(t\right) + f\left[\mathbf{u}\left(t\right)\right]\Delta t
+\end{equation}
+\subsection{Sensor Model}
+The model node also simulates sensors onboard a typical quadcopters.
+While there are more advanced sensors that can be added later (i.e. cameras, GPS, altimeter), for now, this section only contains a three degrees of freedom (3-DoF) gyroscope, a 3-DoF accelerometer, and a 3-DoF magnetometer.
+Thanks to the magic that is quaternion integration, the three sensor values of a gyroscope are the same as the angular velocity described in basis $B$.
+From the angular velocity defintion in equation \ref{EQN:AngularVelocity}, we get
+\begin{equation}
+  g_i = \boldsymbol\omega^N_B \cdot \mathbf{\hat{b}}_i = \omega_i
+\end{equation}
+An accelerometer at the most basic level is a known mass that's allowed to move with respect to its own equations of motion.
+\begin{equation}
+  \mathbf{a}^N_c\cdot \mathbf{\hat{b}}_i=-g\mathbf{\hat{n}}_y\cdot\mathbf{\hat{b}}_i
+\end{equation}
+From the definition of acceleration in equation \ref{EQN:Acceleration}, our definition of $v_i$ in equations \ref{EQN:VelocityX}-\ref{EQN:VelocityZ},  and using the rotation matrix given in equation \ref{EQN:RotationMatrix}
+\begin{align}
+  a_x &= \dot{v}_xq_x^2-\dot{v}_xq_y^2-\ddot{v}_xq_z^2+\dot{v}_xq_w^2\nonumber\\
+  &+2\dot{v}_yq_xq_y-2\dot{v}_yq_zq_w+ 2\dot{v}_z q_xq_z+2\dot{v}_zq_yq_w \nonumber\\
+  &+2gq_xq_y-2gq_zq_w
+\end{align}
 
 
-% \section*{Acknowledgments}
 
-
-%{\appendix[Proof of Zonklar Equations]
-%Use $\backslash${\tt{appendix}} if you have a single appendix:
-% Do not use $\backslash${\tt{section}} anymore after $\backslash${\tt{appendix}}, only $\backslash${\tt{section*}}.
-% If you have multiple appendixes use $\backslash${\tt{appendices}} then use $\backslash${\tt{section}} to start each appendix.
-%You must declare a $\backslash${\tt{section}} before using any $\backslash${\tt{subsection}} or using $\backslash${\tt{label}} ($\backslash${\tt{appendices}} by itself starts a section numbered zero.)}
-
-%{\appendices
-%\section*{Proof of the First Zonklar Equation}
-%Appendix one text goes here.
-% You can choose not to have a title for an appendix if you want by leaving the argument blank
-%\section*{Proof of the Second Zonklar Equation}
-%Appendix two text goes here.}
-
-
-
-% \begin{thebibliography}{1}
-% \bibliographystyle{IEEEtran}
-
-
-%\end{thebibliography}
-
-
-
-% \vfill
-
+\section{Localization Node}
 \end{document}
