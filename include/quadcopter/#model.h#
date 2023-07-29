@@ -47,15 +47,22 @@ namespace quadcopter
 {
 
 /// \brief Provides a succinct way to pass the state to and from the ODE and solver
-struct State
+class State
 {
-  geometry_msgs::Vector3 p; /// Position in inertial frame
-  geometry_msgs::Vector3 v; /// Velocity in inertial frame
-  geometry_msgs::Quaternion q; /// Rotation from inertial frame
-  geometry_msgs::Vector3 w; /// Rotation from inertial frame in robot frame
+public:
+  void set_position(geometry_msgs::Vector3);
+  void set_linear_velocity(geometry_msgs::Vector3);
+  void set_orientation(geometry_msgs::Quaternion);
+  void set_rotational_velocity(geometry_msgs::Vector3);
+  geometry_msgs::Vector3 get_position();
+  geometry_msgs::Vector3 get_linear_velocity();
+  geometry_msgs::Quaternion get_orientation();
+  geometry_msgs::Vector3 get_rotational_velocity();
+private:
+  std::array<float, 13> data;
 };
 
-/// \brief Models the physics of a quadcopter and provides sensor feedback.
+  /// \brief Models the physics of a quadcopter and provides sensor feedback.
 class Model
 {
 public:

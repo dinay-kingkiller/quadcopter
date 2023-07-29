@@ -30,6 +30,8 @@
 #include "quadcopter/model.h"
 
 #include "ros/ros.h"
+#include "geometry_msgs/Vector3.h"
+#include "geometry_msgs/Pose.h"
 
 #include "quadcopter/Motor.h"
 #include "quadcopter/Sensor.h"
@@ -66,9 +68,9 @@ void Model::reset_params()
 void Model::zero()
 {
   time_ = ros::Time::now();
-  state_.r.x = 0.0;
-  state_.r.y = 0.0;
-  state_.r.z = 0.0;
+  state_.p.x = 0.0;
+  state_.p.y = 0.0;
+  state_.p.z = 0.0;
   state_.v.x = 0.0;
   state_.v.y = 0.0;
   state_.v.z = 0.0;
@@ -88,56 +90,69 @@ void Model::move(Motor input) {input_ = input;}
 State Model::get_trajectory(State state, Motor input) const
 {
   State deriv;
-  deriv.r = state.v;
-  deriv.q.w = -state.w.x*state_.q.x
-    - state.w.y*state.q.y
+
+  // Position vector derivative
+  deriv.p = state.v;
+
+  // Quaternion rotation derivative
+  deriv.q.w = -state.w.x*state_.q.x - state.w.y*state.q.y
     - state.w.z*state.q.z;
   
-  deriv.q.x =  state.w.x*state.q.w
-    + state.w.y*state.q.z
+  deriv.q.x =  state.w.x*state.q.w + state.w.y*state.q.z
     - state.w.z*state.q.y;
   
-  deriv.q.y = -state.w.x*state.q.z
-    + state.w.y*state.q.w
+  deriv.q.y = -state.w.x*state.q.z + state.w.y*state.q.w
     + state.w.z*state.q.x;
   
-  deriv.q.z = state.w.x*state.q.y 
-    - state.w.y*state.q.x
+  deriv.q.z = state.w.x*state.q.y - state.w.y*state.q.x
     + state.w.z*state.q.w;
 
+  // Velocity vector derivative
   float thrust = k_force_ / mass_ * input.front * input.front
     + k_force_ / mass_ * input.right * input.right
     + k_force_ / mass_ * input.back * input.back
     + k_force_ / mass_ * input.left * input.left;
 
-  deriv.r.x =  2 * thrust * state.q.w * state.q.z
-    + 2 * thrust * state.q.x * state.q.y;
+  geometry_msgs::Vector3 centrifugal;
+  centrifugal.x = state.w.y*state.v.z - state.w.z*state.v.y;
+  centrifugal.y = state.w.z*state.v.x - state.w.x*state.v.z;
+  centrifugal.z = state.w.x*state.v.y - state.w.y*state.v.x;
 
-  deriv.r.y = thrust * state.q.w * state.q.w
-    - thrust * state.q.x * state.q.x
-    - thrust * state.q.y * state.q.y
-    - thrust * state.q.z * state.q.z;
+  geometry_msgs::Vector3 coriolis;
+  coriolis.x = state.w.x * state.w.y * state.p.y
+    + state.w.x * state.w.z * state.p.z
+    - state.w.y * state.w.y * state.w.x
+    - state.w.z * state.w.z * state.w.x;
 
-  deriv.r.z = 2 * thrust * state.q.w * state.q.x
-    + 2 * thrust * state.q.y * state.q.z
-    - k_gravity_;
+  coriolis.y = state.w.x * state.w.y * state.p.x
+    + state.w.y * state.w.z * state.p.z
+    - state.w.x * state.w.x * state.p.y
+    - state.w.z * state.w.z * state.p.y;
+
+  coriolis.z = state.w.x * state.w.z * state.p.x
+    + state.w.y * state.w.z * state.p.y
+    - state.w.x * state.w.x * state.p.z
+    - state.w.y * state.w.y * state.p.z;
+
+  geometry_msgs::Vector3 gravity;
+
+  gravity.x = 2.0*k_gravity_*(state.q.x*state.q.z + state.q.y*state.q.w);
+  gravity.y = 2.0*k_gravity_*(state.q.y*state.q.z - state.q.x*state.q.w);
+  gravity.z = k_gravity_*(state.q.z*state.q.z + state.q.w*state.q.w
+			  -state.q.x*state.q.x - state.q.y*state.q.y);
   
-  float r_torque = input.right * input.right
-    - input.left * input.left;
-  float p_torque = input.back * input.back
-    - input.front * input.front;
-  float y_torque = input.front * input.front
-    + input.back * input.back
-    - input.left * input.left
-    - input.right * input.right;
+  deriv.v.x = - centrifugal.x - coriolis.x - gravity.x;
+  deriv.v.y = - centrifugal.y - coriolis.y - gravity.y;
+  deriv.v.z = thrust - centrifugal.z - coriolis.z - gravity.z;
+  
+  float r_torque = input.right*input.right - input.left * input.left;
+  float p_torque = input.back * input.back - input.front * input.front;
+  float y_torque = input.front * input.front + input.back * input.back
+    - input.left * input.left - input.right * input.right;
   float k_moment = k_force_ / mass_ / radius_;
   
-  deriv.w.x = -state.w.y * state.w.z
-    + 2 * k_moment * r_torque;
-
-  deriv.w.y = state.w.x * state.w.z
-    + 2 * k_moment * p_torque;
-  
+  deriv.w.x = -state.w.y*state.w.z + 2.0*k_moment*r_torque;
+  deriv.w.y = state.w.x*state.w.z + 2.0*k_moment*p_torque;
   deriv.w.z = k_moment * y_torque;
   return deriv;
 }
@@ -150,9 +165,9 @@ void Model::update(const ros::TimerEvent& e)
   accel_ = deriv.v;
 
   // Integration
-  state_.r.x += deriv.r.x * dt;
-  state_.r.y += deriv.r.y * dt;
-  state_.r.z += deriv.r.z * dt;
+  state_.p.x += deriv.p.x * dt;
+  state_.p.y += deriv.p.y * dt;
+  state_.p.z += deriv.p.z * dt;
   state_.v.x += deriv.v.x * dt;
   state_.v.y += deriv.v.y * dt;
   state_.v.z += deriv.v.z * dt;
@@ -175,9 +190,9 @@ void Model::update(const ros::TimerEvent& e)
   state_.q.w *= inv_norm;
 
   geometry_msgs::Pose new_pose;
-  new_pose.position.x = state_.r.x; // convert Vector3 to Point
-  new_pose.position.y = state_.r.y;
-  new_pose.position.z = state_.r.z;
+  new_pose.position.x = state_.p.x; // convert Vector3 to Point
+  new_pose.position.y = state_.p.y;
+  new_pose.position.z = state_.p.z;
   new_pose.orientation = state_.q;
 
   pose_pub_.publish(new_pose);

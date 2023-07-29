@@ -60,8 +60,7 @@ The model node uses the same definition as the \texttt{tf2} ROS package.
 \end{equation}
 The unit quaternion $\mathrm{q}$ describes the orientation of the robot by describing a transform between two frames
 \begin{equation}
-  \begin{pmatrix}
-    
+  \begin{pmatrix}    
     \mathbf{v}^B \\
     0
   \end{pmatrix}
@@ -103,10 +102,38 @@ where $\boldsymbol\omega^N_B$ is the angular velocity of the robot body $B$ in t
 \subsection{Linear Equations of Motion}
 The linear equations of motion are pretty apparent upon starting our analysis.
 First, the motion of the quadcopter center of mass $c$ from its origin point $o$ is defined simply:
+\begin{equation}
+  \mathbf{p}_{c/o} = p_x \mathbf{\hat{b}}_x + p_y \mathbf{\hat{b}}_y + p_z \mathbf{\hat{b}}_z
+\end{equation}
+The velocity and acceleration in the inertial frame would then be expanded with the derivative in reference frame equation 
 \begin{align}
-  \mathbf{p}_{c/o} &= p_x \mathbf{\hat{n}}_x + p_y \mathbf{\hat{n}}_y + p_z \mathbf{\hat{n}}_z \\
-  \mathbf{v}^N_c &= \dot{p}_x \mathbf{\hat{n}}_x + \dot{p}_y \mathbf{\hat{n}}_y + \dot{p}_z \mathbf{\hat{n}}_z \\
-  \mathbf{a}^N_c &= \ddot{p}_x \mathbf{\hat{n}}_x + \ddot{p}_y \mathbf{\hat{n}}_y + \ddot{p}_z \mathbf{\hat{n}}_z \label{EQN:Acceleration}
+  \mathbf{v}^N_c &= \mathbf{v}^B_c + {\boldsymbol\omega^N_B}\times \mathbf{p}_{c/o} \\
+  \mathbf{a}^N_c &= \mathbf{a}^B_c + {\boldsymbol\omega^N_B}\times \mathbf{v}^B_c + {\boldsymbol\omega^N_B} \times \left({\boldsymbol\omega^N_B} \times \mathbf{p}_{c/o}\right)
+\end{align}
+Expanding the first term
+\begin{equation}
+  \mathbf{a}^B_c = \ddot{p}_x \mathbf{\hat{b}}_x + \ddot{p}_y \mathbf{\hat{b}}_y + \ddot{p}_z \mathbf{\hat{b}}_z
+\end{equation}
+Expanding the second term (Coriolis??)
+\begin{align}
+  \mathbf{a}_{??}
+  %  &= \omega_x\dot{p}_y \mathbf{\hat{b}}_z - \omega_x\dot{p}_z \mathbf{\hat{b}}_y - \omega_y\dot{p}_x \mathbf{\hat{b}}_z + \omega_y\dot{p}_z \mathbf{\hat{b}}_x
+  &= \left(\omega_y\dot{p}_z - \omega_z\dot{p}_y\right) \mathbf{\hat{b}}_x \nonumber \\
+  &+ \left(\omega_z\dot{p}_x - \omega_x\dot{p}_z\right) \mathbf{\hat{b}}_y \nonumber \\
+  &+ \left(\omega_x\dot{p}_y - \omega_y\dot{p}_x\right) \mathbf{\hat{b}}_z
+\end{align}
+And expanding the final term % ahhhhhh
+\begin{align}
+  \mathbf{a}_{cor}
+%  &=- \left(\omega_y^2p_z - \omega_y\omega_zp_y\right) \mathbf{\hat{b}}_z \nonumber \\
+%  &+ \left(\omega_y\omega_zp_z - \omega_z^2p_y\right) \mathbf{\hat{b}}_y \nonumber \\
+%  &+ \left(\omega_x\omega_zp_x - \omega_x^2p_z\right) \mathbf{\hat{b}}_z \nonumber \\
+%  &- \left(\omega_z^2p_x - \omega_x\omega_zp_z\right) \mathbf{\hat{b}}_x \nonumber \\
+%  &- \left(\omega_x^2p_y - \omega_x\omega_yp_x\right) \mathbf{\hat{b}}_y \nonumber \\
+%  &+ \left(\omega_x\omega_yp_y - \omega_y^2p_x\right) \mathbf{\hat{b}}_x \\
+  &= \left(\omega_x\omega_yp_y+\omega_x\omega_zp_z-\omega_y^2p_x-\omega_z^2p_x\right) \mathbf{\hat{b}}_x \nonumber \\
+  &= \left(\omega_x\omega_yp_x+\omega_y\omega_zp_z-\omega_x^2p_y-\omega_z^2p_y\right) \mathbf{\hat{b}}_y \nonumber \\
+  &= \left(\omega_x\omega_zp_x+\omega_y\omega_zp_y-\omega_x^2p_z-\omega_y^2p_z\right) \mathbf{\hat{b}}_z
 \end{align}
 For our model we assume each motor puts out a force proportional to its square.
 If we let $m$ be the total mass of the robot and $k$ be the proportionality constant:
@@ -178,7 +205,7 @@ Using the linear equation of motion (equation \ref{EQN:LinearEOM}), we can take 
 Recall that the rotation matrix given in equation \ref{EQN:RotationMatrix} collects the dot products between the two bases.
 Then, the second set of differential equations becomes
 \begin{align}
-  \dot{v}_x &= 2Tq_xq_z-2Tq_wq_y \\
+  \dot{v}_x &= \omega_zv_y-\omega_yv_z-\omega_x
   \dot{v}_y &= 2Tq_xq_w+2q_yq_z \\
   \dot{v}_z &= -Tq_x^2-Tq_y^2+Tq_z^2+Tq_w^2
 \end{align}
