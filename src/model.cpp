@@ -48,12 +48,9 @@ Model::Model(ros::NodeHandle node)
 }
 void Model::sense(const ros::TimerEvent& e)
 {
-  /// TODO: The accleration calculations are all wrong.
   Sensor sensor;
-  sensor.accelerometer.x = 0.0;
-  sensor.accelerometer.y = 0.0;
-  sensor.accelerometer.z = -k_gravity_;
-  sensor.gyroscope = state_.w;
+  sensor.accelerometer.x = accel_;
+  sensor.gyroscope = gyro_;
 
   sensor_pub_.publish(sensor);
 }
@@ -107,53 +104,61 @@ State Model::get_trajectory(State state, Motor input) const
   deriv.q.z = state.w.x*state.q.y - state.w.y*state.q.x
     + state.w.z*state.q.w;
 
-  // Velocity vector derivative
-  float thrust = k_force_ / mass_ * input.front * input.front
-    + k_force_ / mass_ * input.right * input.right
-    + k_force_ / mass_ * input.back * input.back
-    + k_force_ / mass_ * input.left * input.left;
-
-  geometry_msgs::Vector3 centrifugal;
-  centrifugal.x = state.w.y*state.v.z - state.w.z*state.v.y;
-  centrifugal.y = state.w.z*state.v.x - state.w.x*state.v.z;
-  centrifugal.z = state.w.x*state.v.y - state.w.y*state.v.x;
-
-  geometry_msgs::Vector3 coriolis;
-  coriolis.x = state.w.x * state.w.y * state.p.y
-    + state.w.x * state.w.z * state.p.z
-    - state.w.y * state.w.y * state.w.x
-    - state.w.z * state.w.z * state.w.x;
-
-  coriolis.y = state.w.x * state.w.y * state.p.x
-    + state.w.y * state.w.z * state.p.z
-    - state.w.x * state.w.x * state.p.y
-    - state.w.z * state.w.z * state.p.y;
-
-  coriolis.z = state.w.x * state.w.z * state.p.x
-    + state.w.y * state.w.z * state.p.y
-    - state.w.x * state.w.x * state.p.z
-    - state.w.y * state.w.y * state.p.z;
-
-  geometry_msgs::Vector3 gravity;
-
-  gravity.x = 2.0*k_gravity_*(state.q.x*state.q.z + state.q.y*state.q.w);
-  gravity.y = 2.0*k_gravity_*(state.q.y*state.q.z - state.q.x*state.q.w);
-  gravity.z = k_gravity_*(state.q.z*state.q.z + state.q.w*state.q.w
-			  -state.q.x*state.q.x - state.q.y*state.q.y);
-  
-  deriv.v.x = - centrifugal.x - coriolis.x - gravity.x;
-  deriv.v.y = - centrifugal.y - coriolis.y - gravity.y;
-  deriv.v.z = thrust - centrifugal.z - coriolis.z - gravity.z;
-  
+  // Sum of torques
   float r_torque = input.right*input.right - input.left * input.left;
   float p_torque = input.back * input.back - input.front * input.front;
   float y_torque = input.front * input.front + input.back * input.back
     - input.left * input.left - input.right * input.right;
   float k_moment = k_force_ / mass_ / radius_;
   
-  deriv.w.x = -state.w.y*state.w.z + 2.0*k_moment*r_torque;
-  deriv.w.y = state.w.x*state.w.z + 2.0*k_moment*p_torque;
+  deriv.w.x = 2.0 * k_moment * r_torque - state.w.y * state.w.z;
+  deriv.w.y = 2.0 * k_moment * p_torque + state.w.x * state.w.z;
   deriv.w.z = k_moment * y_torque;
+
+  // Velocity vector derivative
+  float thrust = k_force_ / mass_ * input.front * input.front
+    + k_force_ / mass_ * input.right * input.right
+    + k_force_ / mass_ * input.back * input.back
+    + k_force_ / mass_ * input.left * input.left;
+
+  // Calculate the various reference frame accelerations
+  geometry_msgs::Vector3 euler;
+  euler.x = state.p.z * deriv.w.y - state.p.y * deriv.w.z;
+  euler.y = state.p.x * deriv.w.z - state.p.z * deriv.w.x;
+  euler.z = state.p.y * deriv.w.x - state.p.x * deriv.w.y;
+  
+  geometry_msgs::Vector3 coriolis;
+  coriolis.x = 2.0*state.w.y*state.v.z - 2.0*state.w.z*state.v.y;
+  coriolis.y = 2.0*state.w.z*state.v.x - 2.0*state.w.x*state.v.z;
+  coriolis.z = 2.0*state.w.x*state.v.y - 2.0*state.w.y*state.v.x;
+
+  geometry_msgs::Vector3 centrifugal;
+  centrifugal.x = state.w.x * state.w.y * state.p.y
+    + state.w.x * state.w.z * state.p.z
+    - state.w.y * state.w.y * state.w.x
+    - state.w.z * state.w.z * state.w.x;
+
+  centrifugal.y = state.w.x * state.w.y * state.p.x
+    + state.w.y * state.w.z * state.p.z
+    - state.w.x * state.w.x * state.p.y
+    - state.w.z * state.w.z * state.p.y;
+
+  centrifugal.z = state.w.x * state.w.z * state.p.x
+    + state.w.y * state.w.z * state.p.y
+    - state.w.x * state.w.x * state.p.z
+    - state.w.y * state.w.y * state.p.z;
+
+  geometry_msgs::Vector3 gravity;
+  gravity.x = 2.0*k_gravity_*(state.q.x*state.q.z + state.q.y*state.q.w);
+  gravity.y = 2.0*k_gravity_*(state.q.y*state.q.z - state.q.x*state.q.w);
+  gravity.z = k_gravity_*(state.q.z*state.q.z + state.q.w*state.q.w
+			  -state.q.x*state.q.x - state.q.y*state.q.y);
+
+  // Then combine them to find the velocity trajectory
+  deriv.v.x = - euler.x - centrifugal.x - coriolis.x - gravity.x;
+  deriv.v.y = - euler.y - centrifugal.y - coriolis.y - gravity.y;
+  deriv.v.z = thrust - euler.z - centrifugal.z - coriolis.z - gravity.z;
+  
   return deriv;
 }
 void Model::update(const ros::TimerEvent& e)
@@ -162,7 +167,7 @@ void Model::update(const ros::TimerEvent& e)
   float dt = (this_time-time_).toSec();
   State deriv = Model::get_trajectory(state_, input_);
   time_ = this_time;
-  accel_ = deriv.v;
+
 
   // Integration
   state_.p.x += deriv.p.x * dt;
@@ -189,12 +194,16 @@ void Model::update(const ros::TimerEvent& e)
   state_.q.z *= inv_norm;
   state_.q.w *= inv_norm;
 
+  // IMU Values
+  accel_ = deriv.v;
+  gyro_ = state_.w;
+
+  // Publish new pose.
   geometry_msgs::Pose new_pose;
   new_pose.position.x = state_.p.x; // convert Vector3 to Point
   new_pose.position.y = state_.p.y;
   new_pose.position.z = state_.p.z;
   new_pose.orientation = state_.q;
-
   pose_pub_.publish(new_pose);
 }
 } // namespace quadcopter
