@@ -1,4 +1,4 @@
-Mass: 0.500 # kg
+Mass: 100 # kg
 Radius: 0.100 # m
 GAccel: 10 # m/s^2
 kForce: 1 # kg*m

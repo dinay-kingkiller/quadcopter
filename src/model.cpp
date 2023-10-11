@@ -49,7 +49,7 @@ Model::Model(ros::NodeHandle node)
 void Model::sense(const ros::TimerEvent& e)
 {
   Sensor sensor;
-  sensor.accelerometer.x = accel_;
+  sensor.accelerometer = accel_;
   sensor.gyroscope = gyro_;
 
   sensor_pub_.publish(sensor);
@@ -67,7 +67,7 @@ void Model::zero()
   time_ = ros::Time::now();
   state_.p.x = 0.0;
   state_.p.y = 0.0;
-  state_.p.z = 0.0;
+  state_.p.z = 0.0; // Zero at 1 m altitude.
   state_.v.x = 0.0;
   state_.v.y = 0.0;
   state_.v.z = 0.0;
@@ -91,7 +91,7 @@ State Model::get_trajectory(State state, Motor input) const
   // Position vector derivative
   deriv.p = state.v;
 
-  // Quaternion rotation derivative
+  // Quaternion update from angular velocity
   deriv.q.w = -state.w.x*state_.q.x - state.w.y*state.q.y
     - state.w.z*state.q.z;
   
@@ -116,10 +116,10 @@ State Model::get_trajectory(State state, Motor input) const
   deriv.w.z = k_moment * y_torque;
 
   // Velocity vector derivative
-  float thrust = k_force_ / mass_ * input.front * input.front
-    + k_force_ / mass_ * input.right * input.right
-    + k_force_ / mass_ * input.back * input.back
-    + k_force_ / mass_ * input.left * input.left;
+  float thrust = k_force_  * input.front * input.front
+    + k_force_ * input.right * input.right
+    + k_force_ * input.back * input.back
+    + k_force_ * input.left * input.left;
 
   // Calculate the various reference frame accelerations
   geometry_msgs::Vector3 euler;
@@ -158,6 +158,25 @@ State Model::get_trajectory(State state, Motor input) const
   deriv.v.x = - euler.x - centrifugal.x - coriolis.x - gravity.x;
   deriv.v.y = - euler.y - centrifugal.y - coriolis.y - gravity.y;
   deriv.v.z = thrust - euler.z - centrifugal.z - coriolis.z - gravity.z;
+
+  // Remove rounding errors
+  if (abs(deriv.p.x) < 0.001) deriv.p.x = 0.0;
+  if (abs(deriv.p.y) < 0.001) deriv.p.y = 0.0;
+  if (abs(deriv.p.z) < 0.001) deriv.p.z = 0.0;
+  if (abs(deriv.v.x) < 0.001) deriv.v.x = 0.0;
+  if (abs(deriv.v.y) < 0.001) deriv.v.y = 0.0;
+  if (abs(deriv.v.z) < 0.001) deriv.v.z = 0.0;
+  if (abs(deriv.q.x) < 0.001) deriv.q.x = 0.0;
+  if (abs(deriv.q.y) < 0.001) deriv.q.y = 0.0;
+  if (abs(deriv.q.z) < 0.001) deriv.q.z = 0.0;
+  if (abs(deriv.q.w) < 0.001) deriv.q.w = 0.0;
+
+  
+  // Weak contact mechanics. TODO: Make sure motors don't go through the ground either.
+  if (state.p.z < 0.0) {
+    // deriv.p.z = 0.0;
+    // deriv.v.z = - gravity.z;
+  }
   
   return deriv;
 }
@@ -168,7 +187,13 @@ void Model::update(const ros::TimerEvent& e)
   State deriv = Model::get_trajectory(state_, input_);
   time_ = this_time;
 
-
+  ROS_WARN("Accel x: %f", deriv.v.x);
+  ROS_WARN("Accel y: %f", deriv.v.y);
+  ROS_WARN("Accel z: %f", deriv.v.z);
+  ROS_WARN("Vel x: %f", state_.v.x);
+  ROS_WARN("Vel y: %f", state_.v.y);
+  ROS_WARN("Vel z: %f", state_.v.z);
+  
   // Integration
   state_.p.x += deriv.p.x * dt;
   state_.p.y += deriv.p.y * dt;
@@ -183,6 +208,14 @@ void Model::update(const ros::TimerEvent& e)
   state_.w.x += deriv.w.x * dt;
   state_.w.y += deriv.w.y * dt;
   state_.w.z += deriv.w.z * dt;
+
+  // DEBUG
+  state_.p.x = 0.0;
+  state_.p.y = 0.0;
+  state_.p.z = 0.0;
+
+  // Weak contact mechanics. TODO: Make sure motors don't go through the ground either.
+  // if (state_.p.z < 0.0) state_.p.z = 0.0;
 
   // Normalize quaternion
   float norm2 = state_.q.x*state_.q.x + state_.q.y*state_.q.y
@@ -200,7 +233,7 @@ void Model::update(const ros::TimerEvent& e)
 
   // Publish new pose.
   geometry_msgs::Pose new_pose;
-  new_pose.position.x = state_.p.x; // convert Vector3 to Point
+  new_pose.position.x = state_.p.x;
   new_pose.position.y = state_.p.y;
   new_pose.position.z = state_.p.z;
   new_pose.orientation = state_.q;

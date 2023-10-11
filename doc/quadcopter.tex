@@ -243,6 +243,23 @@ For all the non-linear differential equations $\dot{u}=f\left[\mathbf{u}\right]$
 \begin{equation}
   u\left(t+\Delta t\right) = u\left(t\right) + f\left[\mathbf{u}\left(t\right)\right]\Delta t
 \end{equation}
+\subsection{Constant Controller}
+This section is for deriving a simple controller that provides constant thrust to the quadcopter. It's used for testing out if the physics of the model are set up correctly. All the controllers are based on a reference balanced output. From a zeroed position the quadcopter should hover in place with the balanced output. First we must find a way to remove any rotational acceleration ($\frac{d\mathbf{H}}{dt} = \mathbf{0}$). 
+\begin{align}
+  kr\left(\omega_l^2-\omega_r^2\right) &= 0 \nonumber \\
+  kr\left(\omega_b^2-\omega_f^2\right) &= 0\nonumber \\
+  b\left(\omega_f^2-\omega_r^2 + \omega_b^2 - \omega_l^2\right) &= 0 \nonumber
+\end{align}
+In the above it can be seen with equal motor thrusts the torques on the quadcopter \emph{should} zero. Removing any rotational motion, zeroing the acceleration becomes
+\begin{equation}
+  4km\omega_i^2 -mg = 0 \nonumber
+\end{equation}
+Or
+\begin{equation}
+  \omega_i = \frac{1}{2}\sqrt{\frac{g}{k}}
+\end{equation}
+
+
 \subsection{Sensor Model}
 The model node also simulates sensors onboard a typical quadcopters.
 While there are more advanced sensors that can be added later (i.e. cameras, GPS, altimeter), for now, this section only contains a three degrees of freedom (3-DoF) gyroscope, a 3-DoF accelerometer, and a 3-DoF magnetometer.

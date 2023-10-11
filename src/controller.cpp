@@ -52,12 +52,13 @@ void ConstantController::publish_input(const ros::TimerEvent& e)
 
 void ConstantController::set_msg()
 {
-  float mass, k_gravity, k_torque;
+  float mass, k_gravity, k_force, k_torque;
   node_.getParam("Mass", mass);
   node_.getParam("GAccel", k_gravity);
+  node_.getParam("kForce", k_force);
   node_.getParam("kTorque", k_torque);
   ROS_ASSERT_MSG(k_torque > 0.001, "Torque Constant set too low.");
-  float motor_balance = 0.5 * sqrt(mass*k_gravity/k_torque);
+  float motor_balance = 0.5 * sqrt(k_gravity/k_force);
 
   std::string motor_config;
   node_.getParam("motor_config", motor_config);

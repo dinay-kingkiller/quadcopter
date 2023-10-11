@@ -97,6 +97,8 @@ private:
   Motor input_;
   /// \brief Acceleration in the inertial frame for adding sensor noise.
   geometry_msgs::Vector3 accel_;
+  /// \brief Gyro values in the robot frame?
+  geometry_msgs::Vector3 gyro_;
 };
 } //namespace quadcopter
 
