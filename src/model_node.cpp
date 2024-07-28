@@ -54,6 +54,7 @@ int main(int argc, char **argv)
     ros::Rate(1000),
     &quadcopter::Model::sense,
     &drone);
+  ros::Duration(1).sleep(); // Wait until thrust is updated.
   ros::Timer update_timer = nh.createTimer(
     ros::Rate(1000),
     &quadcopter::Model::update,
