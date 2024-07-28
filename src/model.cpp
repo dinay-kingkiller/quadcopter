@@ -121,43 +121,11 @@ State Model::get_trajectory(State state, Motor input) const
     + k_force_ * input.back * input.back
     + k_force_ * input.left * input.left;
 
-  // Calculate the various reference frame accelerations
-  geometry_msgs::Vector3 euler;
-  euler.x = state.p.z * deriv.w.y - state.p.y * deriv.w.z;
-  euler.y = state.p.x * deriv.w.z - state.p.z * deriv.w.x;
-  euler.z = state.p.y * deriv.w.x - state.p.x * deriv.w.y;
-  
-  geometry_msgs::Vector3 coriolis;
-  coriolis.x = 2.0*state.w.y*state.v.z - 2.0*state.w.z*state.v.y;
-  coriolis.y = 2.0*state.w.z*state.v.x - 2.0*state.w.x*state.v.z;
-  coriolis.z = 2.0*state.w.x*state.v.y - 2.0*state.w.y*state.v.x;
-
-  geometry_msgs::Vector3 centrifugal;
-  centrifugal.x = state.w.x * state.w.y * state.p.y
-    + state.w.x * state.w.z * state.p.z
-    - state.w.y * state.w.y * state.w.x
-    - state.w.z * state.w.z * state.w.x;
-
-  centrifugal.y = state.w.x * state.w.y * state.p.x
-    + state.w.y * state.w.z * state.p.z
-    - state.w.x * state.w.x * state.p.y
-    - state.w.z * state.w.z * state.p.y;
-
-  centrifugal.z = state.w.x * state.w.z * state.p.x
-    + state.w.y * state.w.z * state.p.y
-    - state.w.x * state.w.x * state.p.z
-    - state.w.y * state.w.y * state.p.z;
-
-  geometry_msgs::Vector3 gravity;
-  gravity.x = 2.0*k_gravity_*(state.q.x*state.q.z + state.q.y*state.q.w);
-  gravity.y = 2.0*k_gravity_*(state.q.y*state.q.z - state.q.x*state.q.w);
-  gravity.z = k_gravity_*(state.q.z*state.q.z + state.q.w*state.q.w
-			  -state.q.x*state.q.x - state.q.y*state.q.y);
-
-  // Then combine them to find the velocity trajectory
-  deriv.v.x = - euler.x - centrifugal.x - coriolis.x - gravity.x;
-  deriv.v.y = - euler.y - centrifugal.y - coriolis.y - gravity.y;
-  deriv.v.z = thrust - euler.z - centrifugal.z - coriolis.z - gravity.z;
+  // Acceleration in inertial frame
+  deriv.v.x = state.w.z*state.v.x - state.w.y*state.v.z - state.w.x;
+  deriv.v.y = 2*thrust*state.q.x*state.q.w + 2*state.q.y*state.q.z;
+  deriv.v.z = - thrust*state.q.x*state.q.x - thrust*state.q.y*state.q.y
+    + thrust*state.q.z*state.q.z + thrust*state.q.w*state.q.w - k_gravity_;
 
   // Remove rounding errors
   if (abs(deriv.p.x) < 0.001) deriv.p.x = 0.0;
@@ -170,16 +138,10 @@ State Model::get_trajectory(State state, Motor input) const
   if (abs(deriv.q.y) < 0.001) deriv.q.y = 0.0;
   if (abs(deriv.q.z) < 0.001) deriv.q.z = 0.0;
   if (abs(deriv.q.w) < 0.001) deriv.q.w = 0.0;
-
-  
-  // Weak contact mechanics. TODO: Make sure motors don't go through the ground either.
-  if (state.p.z < 0.0) {
-    // deriv.p.z = 0.0;
-    // deriv.v.z = - gravity.z;
-  }
   
   return deriv;
 }
+
 void Model::update(const ros::TimerEvent& e)
 {
   ros::Time this_time = ros::Time::now();
@@ -187,13 +149,6 @@ void Model::update(const ros::TimerEvent& e)
   State deriv = Model::get_trajectory(state_, input_);
   time_ = this_time;
 
-  ROS_WARN("Accel x: %f", deriv.v.x);
-  ROS_WARN("Accel y: %f", deriv.v.y);
-  ROS_WARN("Accel z: %f", deriv.v.z);
-  ROS_WARN("Vel x: %f", state_.v.x);
-  ROS_WARN("Vel y: %f", state_.v.y);
-  ROS_WARN("Vel z: %f", state_.v.z);
-  
   // Integration
   state_.p.x += deriv.p.x * dt;
   state_.p.y += deriv.p.y * dt;
@@ -209,13 +164,12 @@ void Model::update(const ros::TimerEvent& e)
   state_.w.y += deriv.w.y * dt;
   state_.w.z += deriv.w.z * dt;
 
-  // DEBUG
-  state_.p.x = 0.0;
-  state_.p.y = 0.0;
-  state_.p.z = 0.0;
-
   // Weak contact mechanics. TODO: Make sure motors don't go through the ground either.
-  // if (state_.p.z < 0.0) state_.p.z = 0.0;
+  if (state_.p.z < 0.0)
+  {
+      state_.p.z = 0.0;
+      if (state_.v.z < 0.0) state_.v.z = 0.0;
+  }
 
   // Normalize quaternion
   float norm2 = state_.q.x*state_.q.x + state_.q.y*state_.q.y
@@ -227,8 +181,14 @@ void Model::update(const ros::TimerEvent& e)
   state_.q.z *= inv_norm;
   state_.q.w *= inv_norm;
 
-  // IMU Values
-  accel_ = deriv.v;
+  // Set IMU Values
+  float bx_nz = 2.0*state_.q.x*state_.q.z + 2.0*state_.q.y*state_.q.w;
+  float by_nz = - 2.0*state_.q.x*state_.q.w + 2.0*state_.q.y*state_.q.z;
+  float bz_nz = - state_.q.x*state_.q.x - state_.q.y*state_.q.y
+    + state_.q.z*state_.q.z + state_.q.w*state_.q.w;
+  accel_.x = deriv.v.x - k_gravity_ * bx_nz;
+  accel_.y = deriv.v.y - k_gravity_ * by_nz;
+  accel_.z = deriv.v.z - k_gravity_ * bz_nz;
   gyro_ = state_.w;
 
   // Publish new pose.
