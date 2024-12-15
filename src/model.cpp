@@ -29,6 +29,9 @@
 
 #include "quadcopter/model.h"
 
+#include <random>
+#include <vector>
+
 #include "ros/ros.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Pose.h"
@@ -43,31 +46,55 @@ Model::Model(ros::NodeHandle node)
 {
   Model::reset_params();
   Model::zero();
+  rand_gen_ = std::mt19937(std::random_device{}());
   pose_pub_ = node.advertise<geometry_msgs::Pose>("pose", 1000);
   sensor_pub_ = node.advertise<quadcopter::Sensor>("imu", 1000);
 }
 void Model::sense(const ros::TimerEvent& e)
 {
-  Sensor sensor;
-  sensor.accelerometer = accel_;
-  sensor.gyroscope = gyro_;
+  Sensor sensor_actual;
+  Sensor sensor_raw;
 
-  sensor_pub_.publish(sensor);
+  sensor_actual.accelerometer = accel_;
+  sensor_actual.gyroscope = gyro_;
+
+  // Add sensor noise
+  accel_.x += accel_noise_(rand_gen_);
+  accel_.y += accel_noise_(rand_gen_);
+  accel_.z += accel_noise_(rand_gen_);
+  gyro_.x += gyro_noise_(rand_gen_);
+  gyro_.y += gyro_noise_(rand_gen_);
+  gyro_.z += gyro_noise_(rand_gen_);
+
+  // Convert to bits
+
+  sensor_pub_.publish(sensor_actual);
 }
 void Model::reset_params()
 {
+  // Physical Parameters
   node_.getParam("Mass", mass_);
   node_.getParam("Radius", radius_);
   node_.getParam("GAccel", k_gravity_);
   node_.getParam("kForce", k_force_);
   node_.getParam("kTorque", k_torque_);
+
+  // Sensor Parameters
+  int gyro_fs_sel, accel_fs_sel;
+  std::vector<float> gyro_fs_var, accel_fs_var;
+  node_.getParam("GYRO_FS_SEL", gyro_fs_sel);
+  node_.getParam("ACCEL_FS_SEL", accel_fs_sel);
+  node_.getParam("Gyro_FS_Var", gyro_fs_var);
+  node_.getParam("Accel_FS_Var", accel_fs_var);
+  gyro_noise_ = std::normal_distribution<double>(0.0, gyro_fs_var[gyro_fs_sel]);
+  accel_noise_ = std::normal_distribution<double>(0.0, accel_fs_var[accel_fs_sel]);
 }
 void Model::zero()
 {
   time_ = ros::Time::now();
   state_.p.x = 0.0;
   state_.p.y = 0.0;
-  state_.p.z = 0.0; // Zero at 1 m altitude.
+  state_.p.z = 0.0;
   state_.v.x = 0.0;
   state_.v.y = 0.0;
   state_.v.z = 0.0;
