@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <rosparam file="$(find quadcopter)/config/model.yaml"/>
-  <rosparam> motor_config: balanced </rosparam>
+  <rosparam> motor_config: zero </rosparam>
   <node
     pkg="quadcopter"
     type="run_model_node"

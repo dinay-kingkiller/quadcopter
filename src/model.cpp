@@ -186,9 +186,9 @@ void Model::update(const ros::TimerEvent& e)
   float by_nz = - 2.0*state_.q.x*state_.q.w + 2.0*state_.q.y*state_.q.z;
   float bz_nz = - state_.q.x*state_.q.x - state_.q.y*state_.q.y
     + state_.q.z*state_.q.z + state_.q.w*state_.q.w;
-  accel_.x = deriv.v.x - k_gravity_ * bx_nz;
-  accel_.y = deriv.v.y - k_gravity_ * by_nz;
-  accel_.z = deriv.v.z - k_gravity_ * bz_nz;
+  accel_.x = deriv.v.x + k_gravity_ * bx_nz;
+  accel_.y = deriv.v.y + k_gravity_ * by_nz;
+  accel_.z = deriv.v.z + k_gravity_ * bz_nz;
   gyro_ = state_.w;
 
   // Publish new pose.
