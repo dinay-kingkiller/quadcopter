@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2023, Dinay Kingkiller
+// Copyright (c) 2024, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -66,9 +66,12 @@ void Model::sense(const ros::TimerEvent& e)
   gyro_.y += gyro_noise_(rand_gen_);
   gyro_.z += gyro_noise_(rand_gen_);
 
+  sensor_raw.accelerometer = accel_;
+  sensor_raw.gyroscope = gyro_;
+
   // Convert to bits
 
-  sensor_pub_.publish(sensor_actual);
+  sensor_pub_.publish(sensor_raw);
 }
 void Model::reset_params()
 {
@@ -208,7 +211,7 @@ void Model::update(const ros::TimerEvent& e)
   state_.q.z *= inv_norm;
   state_.q.w *= inv_norm;
 
-  // Set IMU Values
+  // Set true IMU Values
   float bx_nz = 2.0*state_.q.x*state_.q.z + 2.0*state_.q.y*state_.q.w;
   float by_nz = - 2.0*state_.q.x*state_.q.w + 2.0*state_.q.y*state_.q.z;
   float bz_nz = - state_.q.x*state_.q.x - state_.q.y*state_.q.y

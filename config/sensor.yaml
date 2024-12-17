@@ -1,11 +1,11 @@
 # ICM-20948 
 GYRO_FS_SEL: 0 # Gyro Scale Parameter
 ACCEL_FS_SEL: 0 # Accelerometer Scale Parameter
-Gyro_FSR: {250, 500, 1000, 2000} # dps
-Gyro_Scale: {131, 65.5, 32.8, 16.4} # LSB/(dps)
+Gyro_FSR: [250, 500, 1000, 2000] # dps
+Gyro_Scale: [131, 65.5, 32.8, 16.4] # LSB/(dps)
 Gyro_Lin_Var: 0.008 # 1/dps (5% tolerance/1.96 z-value for 95% confidence)
-Gyro_FS_Var: {6.38, 12.8, 25.5, 51.0} # dps
-Accel_FSR: {2, 4, 8, 16} # g
-Accel_Scale: {16382, 8192, 4096, 2048} # LSB/g
+Gyro_FS_Var: [6.38, 12.8, 25.5, 51.0] # dps
+Accel_FSR: [20., 40., 80., 160.] # m/s/s # [2, 4, 8, 16] # g
+Accel_Scale: [16382, 8192, 4096, 2048] # LSB/g
 Accel_Lin_Var: 0.003 # 1/g (5% tolerance/1.96 z-value for 95% confidence)
-Accel_FS_Var: {0.05, 0.1, 0.2, 0.4} # g
+Accel_FS_Var: [0.5, 1., 2., 4.] # m/s/s # [0.05, 0.1, 0.2, 0.4] # g
