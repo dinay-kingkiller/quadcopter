@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2023, Dinay Kingkiller
+// Copyright (c) 2024, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -29,12 +29,17 @@
 
 #include "quadcopter/model.h"
 
+#include <cmath>
+#include <random>
+#include <vector>
+
 #include "ros/ros.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Pose.h"
 
 #include "quadcopter/Motor.h"
 #include "quadcopter/Sensor.h"
+#include "quadcopter/ICM20948.h"
 
 namespace quadcopter
 {
@@ -43,31 +48,79 @@ Model::Model(ros::NodeHandle node)
 {
   Model::reset_params();
   Model::zero();
+  rand_gen_ = std::mt19937(std::random_device{}());
   pose_pub_ = node.advertise<geometry_msgs::Pose>("pose", 1000);
-  sensor_pub_ = node.advertise<quadcopter::Sensor>("imu", 1000);
+  sensor_pub_ = node.advertise<quadcopter::ICM20948>("ICM20948", 1000);
 }
 void Model::sense(const ros::TimerEvent& e)
 {
-  Sensor sensor;
-  sensor.accelerometer = accel_;
-  sensor.gyroscope = gyro_;
+  Sensor sensor_actual;
+  ICM20948 sensor_raw;
 
-  sensor_pub_.publish(sensor);
+  sensor_actual.accelerometer = accel_;
+  sensor_actual.gyroscope = gyro_;
+
+  // Add sensor noise
+  accel_.x += accel_noise_(rand_gen_);
+  accel_.y += accel_noise_(rand_gen_);
+  accel_.z += accel_noise_(rand_gen_);
+  gyro_.x += gyro_noise_(rand_gen_);
+  gyro_.y += gyro_noise_(rand_gen_);
+  gyro_.z += gyro_noise_(rand_gen_);
+
+  // Convert to g's
+  int16_t a_x = static_cast<int16_t>(std::round(accel_.x*accel_scale_/k_gravity_));
+  int16_t a_y = static_cast<int16_t>(std::round(accel_.y*accel_scale_/k_gravity_));
+  int16_t a_z = static_cast<int16_t>(std::round(accel_.z*accel_scale_/k_gravity_));
+  int16_t g_x = static_cast<int16_t>(std::round(gyro_.x*gyro_scale_*180./M_PI));
+  int16_t g_y = static_cast<int16_t>(std::round(gyro_.y*gyro_scale_*180./M_PI));
+  int16_t g_z = static_cast<int16_t>(std::round(gyro_.z*gyro_scale_*180./M_PI));
+
+  // Convert to Bytes
+  sensor_raw.ACCEL_XOUT_H = static_cast<uint8_t>((a_x >> 8) & 0xFF);
+  sensor_raw.ACCEL_XOUT_L = static_cast<uint8_t>(a_x & 0xFF);
+  sensor_raw.ACCEL_YOUT_H = static_cast<uint8_t>((a_y >> 8) & 0xFF);
+  sensor_raw.ACCEL_YOUT_L = static_cast<uint8_t>(a_y & 0xFF);
+  sensor_raw.ACCEL_ZOUT_H = static_cast<uint8_t>((a_z >> 8) & 0xFF);
+  sensor_raw.ACCEL_ZOUT_L = static_cast<uint8_t>(a_z & 0xFF);
+  sensor_raw.GYRO_XOUT_H = static_cast<uint8_t>((g_x >> 8) & 0xFF);
+  sensor_raw.GYRO_XOUT_L = static_cast<uint8_t>(g_x & 0xFF);
+  sensor_raw.GYRO_YOUT_H = static_cast<uint8_t>((g_y >> 8) & 0xFF);
+  sensor_raw.GYRO_YOUT_L = static_cast<uint8_t>(g_y & 0xFF);
+  sensor_raw.GYRO_ZOUT_H = static_cast<uint8_t>((g_z >> 8) & 0xFF);
+  sensor_raw.GYRO_ZOUT_L = static_cast<uint8_t>(g_z & 0xFF);
+
+  sensor_pub_.publish(sensor_raw);
 }
 void Model::reset_params()
 {
+  // Physical Parameters
   node_.getParam("Mass", mass_);
   node_.getParam("Radius", radius_);
   node_.getParam("GAccel", k_gravity_);
   node_.getParam("kForce", k_force_);
   node_.getParam("kTorque", k_torque_);
+
+  // Sensor Parameters
+  int gyro_fs_sel, accel_fs_sel;
+  std::vector<float> gyro_fs_var, accel_fs_var, gyro_scale_var, accel_scale_var;
+  node_.getParam("GYRO_FS_SEL", gyro_fs_sel);
+  node_.getParam("ACCEL_FS_SEL", accel_fs_sel);
+  node_.getParam("Gyro_FS_Var", gyro_fs_var);
+  node_.getParam("Accel_FS_Var", accel_fs_var);
+  node_.getParam("Gyro_Scale", gyro_scale_var);
+  node_.getParam("Accel_Scale", accel_scale_var);
+  gyro_noise_ = std::normal_distribution<double>(0.0, gyro_fs_var[gyro_fs_sel]);
+  accel_noise_ = std::normal_distribution<double>(0.0, accel_fs_var[accel_fs_sel]);
+  gyro_scale_ = gyro_scale_var[gyro_fs_sel];
+  accel_scale_ = accel_scale_var[accel_fs_sel];
 }
 void Model::zero()
 {
   time_ = ros::Time::now();
   state_.p.x = 0.0;
   state_.p.y = 0.0;
-  state_.p.z = 0.0; // Zero at 1 m altitude.
+  state_.p.z = 0.0;
   state_.v.x = 0.0;
   state_.v.y = 0.0;
   state_.v.z = 0.0;
@@ -181,7 +234,7 @@ void Model::update(const ros::TimerEvent& e)
   state_.q.z *= inv_norm;
   state_.q.w *= inv_norm;
 
-  // Set IMU Values
+  // Set true IMU Values
   float bx_nz = 2.0*state_.q.x*state_.q.z + 2.0*state_.q.y*state_.q.w;
   float by_nz = - 2.0*state_.q.x*state_.q.w + 2.0*state_.q.y*state_.q.z;
   float bz_nz = - state_.q.x*state_.q.x - state_.q.y*state_.q.y

@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2023, Dinay Kingkiller
+// Copyright (c) 2024, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,8 @@
 
 #ifndef QUADCOPTER_MODEL_H_
 #define QUADCOPTER_MODEL_H_
+
+#include <random>
 
 #include "ros/ros.h"
 
@@ -80,21 +82,28 @@ private:
   /// \brief publisher for current pose of the quadcopter
   ros::Publisher pose_pub_;
   /// \brief mass of the quadcopter. Model assumes all mass is in the motors.
-  float mass_;
+  double mass_;
   /// \brief length of each arm. Model assumes all mass is in the motors.
-  float radius_;
+  double radius_;
   /// \brief graviational acceleration constant
-  float k_gravity_;
+  double k_gravity_;
   /// \brief force constant of motors
-  float k_force_;
+  double k_force_;
   /// \brief torque constant of motors
-  float k_torque_; 
+  double k_torque_;
   /// \brief time the state was last updated
   ros::Time time_;
   /// \brief last updated state
   State state_;
   /// \brief last motor input given
   Motor input_;
+  /// \brief Sensor variance/noise generation
+  std::mt19937 rand_gen_;
+  std::normal_distribution<double> accel_noise_;
+  std::normal_distribution<double> gyro_noise_;
+  /// \brief Sensor max values
+  double gyro_scale_;
+  double accel_scale_;
   /// \brief Acceleration in the inertial frame for adding sensor noise.
   geometry_msgs::Vector3 accel_;
   /// \brief Gyro values in the robot frame?

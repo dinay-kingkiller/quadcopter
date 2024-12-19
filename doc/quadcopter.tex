@@ -12,6 +12,12 @@
 \usepackage{cite}
 \hyphenation{}
 
+\newcommand*\BitAnd{\mathbin{\&}}
+\newcommand*\BitOr{\mathbin{|}}
+\newcommand*\ShiftLeft{\ll}
+\newcommand*\ShiftRight{\gg}
+\newcommand*\BitNeg{\ensuremath{\mathord{\sim}}}
+
 \begin{document}
 
 \title{\texttt{quadcopter} package}
@@ -277,6 +283,20 @@ From the definition of acceleration in equation \ref{EQN:Acceleration}, our defi
   a_x &= \dot{v}_xq_x^2-\dot{v}_xq_y^2-\ddot{v}_xq_z^2+\dot{v}_xq_w^2\nonumber\\
   &+2\dot{v}_yq_xq_y-2\dot{v}_yq_zq_w+ 2\dot{v}_z q_xq_z+2\dot{v}_zq_yq_w \nonumber\\
   &+2gq_xq_y-2gq_zq_w
+\end{align}
+One example of an IMU is the ICM20948. From the datasheet,
+\begin{equation}
+  \mathrm{X\_acceleration = ACCEL\_XOUT/Accel\_Sensitivity}
+\end{equation}
+Or
+\begin{equation}
+  \mathrm{ACCEL\_iOUT} = (\mathbf{a}\cdot\mathbf{b}_i) \mathrm{Accel\_Sensitivity}
+\end{equation}
+for $i\in \{X, Y, Z\}$. The acceleration word length is 16 bits output in two's complement format. We let C++ manage this with \texttt{static\_cast}.
+\begin{align}
+  \mathrm{ACCEL\_iOUT\_H} &= (\mathrm{ACCEL\_iOUT} \ShiftLeft 8) \BitAnd
+  \mathtt{0xFF} \\
+  \mathrm{ACCEL\_iOUT\_L} &= \mathrm{ACCEL\_iOUT} \BitAnd \mathtt{0xFF}
 \end{align}
 
 

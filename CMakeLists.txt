@@ -52,6 +52,7 @@ add_message_files(
   FILES
   Motor.msg
   Sensor.msg
+  ICM20948.msg
 )
 
 ## Generate services in the 'srv' folder
