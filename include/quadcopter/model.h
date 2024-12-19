@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2023, Dinay Kingkiller
+// Copyright (c) 2024, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -97,10 +97,13 @@ private:
   State state_;
   /// \brief last motor input given
   Motor input_;
-  /// \brief Sensor variance/noise
+  /// \brief Sensor variance/noise generation
   std::mt19937 rand_gen_;
   std::normal_distribution<double> accel_noise_;
   std::normal_distribution<double> gyro_noise_;
+  /// \brief Sensor max values
+  double gyro_scale_;
+  double accel_scale_;
   /// \brief Acceleration in the inertial frame for adding sensor noise.
   geometry_msgs::Vector3 accel_;
   /// \brief Gyro values in the robot frame?
