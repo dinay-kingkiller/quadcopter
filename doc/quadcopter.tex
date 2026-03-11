@@ -67,41 +67,40 @@ The model node uses the same definition as the \texttt{tf2} ROS package.
 The unit quaternion $\mathrm{q}$ describes the orientation of the robot by describing a transform between two frames
 \begin{equation}
   \begin{pmatrix}    
-    \mathbf{v}^B \\
+    \mathbf{v}^N \\
     0
   \end{pmatrix}
   = \mathrm{q} \otimes
   \begin{pmatrix}
-    \mathbf{v}^N \\
+    \mathbf{v}^B \\
     0
   \end{pmatrix}\otimes
   \mathrm{q}^*
 \end{equation}
-where $\mathbf{v}^N$ and $\mathbf{v}^B$ are the same vector described in an inertial frame $N$ and the robot body frame $B$ respectively.
-A rotation matrix is another description of rotations:
+where $\mathbf{v}^N$ and $\mathbf{v}^B$ are the same vector described in a world frame $N$ and the robot body frame $B$ respectively.
+A rotation matrix is another description of rotations
 \begin{equation}
-  \mathbf{v}^B = \mathrm{R}\left(\mathbf{v}^N\right)
+  \mathbf{v}^N = \mathrm{R}\left(\mathbf{v}^B\right)
 \end{equation}
-Importantly for the model node, rotation matrices collect the dot product of basis vectors: $\mathrm{R}_{ij} = \mathbf{\hat{b}}_i \cdot \mathbf{\hat{n}}_j$. In terms of quaternion $(x, y, z, w)$
+Importantly for the model node, rotation matrices collect the dot product of basis vectors: $\mathrm{R}_{ij} = \mathbf{\hat{n}}_i \cdot \mathbf{\hat{b}}_j$. In terms of quaternion $(x, y, z, w)$
 \begin{equation}
   \mathrm{R}=\left(
   \begin{smallmatrix}
-    x^2-y^2-z^2+w^2 & 2xy-2zw & 2xz+2yw \\
-    2xy+2zw & -x^2+y^2-z^2+w^2 & -2xw+2yz \\
-    2xz-2wy & 2xw+2yz & -x^2-y^2+z^2+w^2
+    x^2-y^2-z^2+w^2 & 2xy+2zw & 2xz-2yw \\
+    2xy-2zw & -x^2+y^2-z^2+w^2 & -2xw+2yz \\
+    2xz+2yw & 2xw+2yz & -x^2-y^2+z^2+w^2
   \end{smallmatrix} 
   \right) \label{EQN:RotationMatrix}
 \end{equation}
 That rate of change of the quaternion can be calculated from the angular velocity
 \begin{equation}
-  \mathrm{\dot{q}} = \frac{1}{2}
+  \mathrm{\dot{q}} = \frac{1}{2} \mathrm{q} \otimes
   \begin{pmatrix}
     \boldsymbol\omega^N_B \\
     0
-  \end{pmatrix}
-  \otimes \mathrm{q} \label{EQN:QuaternionVelocity}
+  \end{pmatrix} \label{EQN:QuaternionVelocity}
 \end{equation}
-where $\boldsymbol\omega^N_B$ is the angular velocity of the robot body $B$ in the inertial frame $N$ described in the body basis:
+where $\boldsymbol\omega^N_B$ is the angular velocity of the robot body $B$ in the inertial frame $N$ described in the body basis
 \begin{equation}
   \boldsymbol\omega^N_B = \omega_x \mathbf{\hat{b}}_x + \omega_y \mathbf{\hat{b}}_y + \omega_z \mathbf{\hat{b}}_z \label{EQN:AngularVelocity}
 \end{equation}
