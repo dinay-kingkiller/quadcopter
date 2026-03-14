@@ -77,7 +77,7 @@ The unit quaternion $\mathrm{q}$ describes the orientation of the robot by descr
   \end{pmatrix}\otimes
   \mathrm{q}^*
 \end{equation}
-where $\mathbf{v}^N$ and $\mathbf{v}^B$ are the same vector described in a world frame $N$ and the robot body frame $B$ respectively.
+where $\mathbf{v}^N$ and $\mathbf{v}^B$ are the same vector described in a inertial frame $N$ and the robot frame $B$ respectively.
 A rotation matrix is another description of rotations
 \begin{equation}
   \mathbf{v}^N = \mathrm{R}\left(\mathbf{v}^B\right)
@@ -100,53 +100,36 @@ That rate of change of the quaternion can be calculated from the angular velocit
     0
   \end{pmatrix} \label{EQN:QuaternionVelocity}
 \end{equation}
-where $\boldsymbol\omega^N_B$ is the angular velocity of the robot body $B$ in the inertial frame $N$ described in the body basis
+where $\boldsymbol\omega^N_B$ is the angular velocity of the robot $B$ relative to the inertial frame $N$, expressed in the body basis.
 \begin{equation}
   \boldsymbol\omega^N_B = \omega_x \mathbf{\hat{b}}_x + \omega_y \mathbf{\hat{b}}_y + \omega_z \mathbf{\hat{b}}_z \label{EQN:AngularVelocity}
 \end{equation}
 \subsection{Linear Equations of Motion}
-The linear equations of motion are pretty apparent upon starting our analysis.
-First, the motion of the quadcopter center of mass $c$ from its origin point $o$ is defined simply:
+We begin by describing the motion of the quadcopter center of mass.
+First, the motion of the quadcopter center of mass $c$ from its origin point $o$ is expressed simply
 \begin{equation}
-  \mathbf{p}_{c/o} = p_x \mathbf{\hat{b}}_x + p_y \mathbf{\hat{b}}_y + p_z \mathbf{\hat{b}}_z
+  \mathbf{p}_{c/o} = p_x \mathbf{\hat{n}}_x + p_y \mathbf{\hat{n}}_y + p_z \mathbf{\hat{n}}_z
 \end{equation}
-Instead of calculating the acceleration in the inertial frame, we can use v2pt theory to expand the derivatives
-\begin{align}
-  \mathbf{v}^N_c &= \mathbf{v}^B_c + {\boldsymbol\omega^N_B}\times \mathbf{p}_{c/o} \\
-  \mathbf{a}^N_c &= \mathbf{a}^B_c + {\boldsymbol\alpha^N_B}\times\mathbf{p}_{c/o}\nonumber \\
-  &+ 2{\boldsymbol\omega^N_B}\times \mathbf{v}^B_c + {\boldsymbol\omega^N_B} \times \left({\boldsymbol\omega^N_B} \times \mathbf{p}_{c/o}\right)
-\end{align}
-The first term is the linear acceleration observed by the robot.
+One way to find the velocity is the derivative in frame $N$
 \begin{equation}
-  \mathbf{a}^B_c = \ddot{p}_x \mathbf{\hat{b}}_x + \ddot{p}_y \mathbf{\hat{b}}_y + \ddot{p}_z \mathbf{\hat{b}}_z
+  \mathbf{v}^N_c = \dot{p}_x \mathbf{\hat{n}}_x + \dot{p}_y \mathbf{\hat{n}}_y + \dot{p}_z \mathbf{\hat{n}}_z \label{EQN:VelocityInertial}
 \end{equation}
-The second term is the Euler acceleration
+Expressing the velocity of the center of mass in the body frame simplifies the dynamcis and keeps the position representation useful.
+The inertial velocity is now expressed in the body basis
+\begin{equation}
+  \mathbf{v}^N_c = v_x \mathbf{\hat{b}}_x + v_y \mathbf{\hat{b}}_y + v_z \mathbf{\hat{b}}_z \label{EQN:VelocityBody}
+\end{equation}
+Applying the vector transport theorem
+\begin{equation}
+  \mathbf{a}^N_c &= \mathbf{a}^B_c + {\boldsymbol\omega^N_B}\times\mathbf{v}^N_c
+\end{equation}
+The first term is the body center acceleration
+\begin{equation}
+  \mathbf{a}^B_c = \dot{v}_x \mathbf{\hat{b}}_x + \dot{v}_y \mathbf{\hat{b}}_y + \dot{v}_z \mathbf{\hat{b}}_z
+\end{equation}
+The second is the Coriolis term
 \begin{align}
-  \mathbf{a}_{euler} &= %\dot\omega_xp_y \mathbf{\hat{b}}_z-\dot\omega_xp_z \mathbf{\hat{b}}_y - \dot\omega_yp_x \mathbf{\hat{b}}_z + \dot\omega_yp_z \mathbf{\hat{b}}_x + \dot\omega_zp_x\mathbf{\hat{b}}_y - \dot\omega_zp_y \mathbf{\hat{b}}_x
-  \left(p_z\dot\omega_y-p_y\dot\omega_z\right) \mathbf{\hat{b}}_x \nonumber \\
-  &+ \left(p_x\dot\omega_z-p_z\dot\omega_x\right) \mathbf{\hat{b}}_y \nonumber \\
-  &+ \left(p_y\dot\omega_x - p_x\dot\omega_y \right) \mathbf{\hat{b}}_z
-\end{align}
-The third term is the Coriolis acceleration
-\begin{align}
-  \mathbf{a}_{coriolis}
-  %  &= \omega_x\dot{p}_y \mathbf{\hat{b}}_z - \omega_x\dot{p}_z \mathbf{\hat{b}}_y - \omega_y\dot{p}_x \mathbf{\hat{b}}_z + \omega_y\dot{p}_z \mathbf{\hat{b}}_x
-  &= \left(2\omega_y\dot{p}_z - 2\omega_z\dot{p}_y\right) \mathbf{\hat{b}}_x \nonumber \\
-  &+ \left(2\omega_z\dot{p}_x - 2\omega_x\dot{p}_z\right) \mathbf{\hat{b}}_y \nonumber \\
-  &+ \left(2\omega_x\dot{p}_y - 2\omega_y\dot{p}_x\right) \mathbf{\hat{b}}_z
-\end{align}
-And the final term is the centrifugal acceleration
-\begin{align}
-  \mathbf{a}_{center}
-%  &=- \left(\omega_y^2p_z - \omega_y\omega_zp_y\right) \mathbf{\hat{b}}_z \nonumber \\
-%  &+ \left(\omega_y\omega_zp_z - \omega_z^2p_y\right) \mathbf{\hat{b}}_y \nonumber \\
-%  &+ \left(\omega_x\omega_zp_x - \omega_x^2p_z\right) \mathbf{\hat{b}}_z \nonumber \\
-%  &- \left(\omega_z^2p_x - \omega_x\omega_zp_z\right) \mathbf{\hat{b}}_x \nonumber \\
-%  &- \left(\omega_x^2p_y - \omega_x\omega_yp_x\right) \mathbf{\hat{b}}_y \nonumber \\
-%  &+ \left(\omega_x\omega_yp_y - \omega_y^2p_x\right) \mathbf{\hat{b}}_x \\
-  &= \left(\omega_x\omega_yp_y+\omega_x\omega_zp_z-\omega_y^2p_x-\omega_z^2p_x\right) \mathbf{\hat{b}}_x \nonumber \\
-  &+ \left(\omega_x\omega_yp_x+\omega_y\omega_zp_z-\omega_x^2p_y-\omega_z^2p_y\right) \mathbf{\hat{b}}_y \nonumber \\
-  &+ \left(\omega_x\omega_zp_x+\omega_y\omega_zp_y-\omega_x^2p_z-\omega_y^2p_z\right) \mathbf{\hat{b}}_z
+  {\boldsymbol\omega^N_B}\times\mathbf{v}^N_c &= \left(\omega_yv_z-\omega_zv_y\right) \mathbf{\hat{b}}_x \nonumber\\&+ \left(\omega_zv_x-\omega_xv_z\right) \mathbf{\hat{b}}_y \nonumber\\&+ \left(\omega_xv_y-\omega_yv_x\right) \mathbf{\hat{b}}_z
 \end{align}
 For our model we assume each motor puts out a force proportional to its square.
 If we let $m$ be the total mass of the robot and $k$ be the proportionality constant:
@@ -207,10 +190,11 @@ The last couple equations combine to form the rotational equations of motion
 \begin{equation}
   \frac{^Nd}{dt}\mathbf{H}^N_{B/c} = \mathbf{M}_{B/c} + \boldsymbol\tau \label{EQN:RotationalEOM}
 \end{equation}
-\subsection{Numerical Integration}
-The first differential equations are the easiest differential equations. Define the velocities $v_i = \dot{r}_i$. Then $\dot{v}_i=\ddot{p}_i$ and
+
+\subsection{State Trajectory}
+The first differential equations come from combining equations \ref{EQN:VelocityInertial} and \ref{EQN:VelocityBody}, which is simply the vector of ($v_x$, $v_y$, $v_z$) rotated by $q$
 \begin{align}
-  \dot{p}_x &= v_x \label{EQN:VelocityX}\\
+  \dot{p}_x &= \\
   \dot{p}_y &= v_y \\
   \dot{p}_z &= v_z \label{EQN:VelocityZ}
 \end{align}
@@ -248,24 +232,7 @@ For all the non-linear differential equations $\dot{u}=f\left[\mathbf{u}\right]$
 \begin{equation}
   u\left(t+\Delta t\right) = u\left(t\right) + f\left[\mathbf{u}\left(t\right)\right]\Delta t
 \end{equation}
-\subsection{Constant Controller}
-This section is for deriving a simple controller that provides constant thrust to the quadcopter. It's used for testing out if the physics of the model are set up correctly. All the controllers are based on a reference balanced output. From a zeroed position the quadcopter should hover in place with the balanced output. First we must find a way to remove any rotational acceleration ($\frac{d\mathbf{H}}{dt} = \mathbf{0}$). 
-\begin{align}
-  kr\left(\omega_l^2-\omega_r^2\right) &= 0 \nonumber \\
-  kr\left(\omega_b^2-\omega_f^2\right) &= 0\nonumber \\
-  b\left(\omega_f^2-\omega_r^2 + \omega_b^2 - \omega_l^2\right) &= 0 \nonumber
-\end{align}
-In the above it can be seen with equal motor thrusts the torques on the quadcopter \emph{should} zero. Removing any rotational motion, zeroing the acceleration becomes
-\begin{equation}
-  4km\omega_i^2 -mg = 0 \nonumber
-\end{equation}
-Or
-\begin{equation}
-  \omega_i = \frac{1}{2}\sqrt{\frac{g}{k}}
-\end{equation}
-
-
-\subsection{Sensor Model}
+\section{Sensor Model}
 The model node also simulates sensors onboard a typical quadcopters.
 While there are more advanced sensors that can be added later (i.e. cameras, GPS, altimeter), for now, this section only contains a three degrees of freedom (3-DoF) gyroscope, a 3-DoF accelerometer, and a 3-DoF magnetometer.
 Thanks to the magic that is quaternion integration, the three sensor values of a gyroscope are the same as the angular velocity described in basis $B$.
@@ -298,7 +265,21 @@ for $i\in \{X, Y, Z\}$. The acceleration word length is 16 bits output in two's 
   \mathrm{ACCEL\_iOUT\_L} &= \mathrm{ACCEL\_iOUT} \BitAnd \mathtt{0xFF}
 \end{align}
 
-
+\subsection{Constant Controller}
+This section is for deriving a simple controller that provides constant thrust to the quadcopter. It's used for testing out if the physics of the model are set up correctly. All the controllers are based on a reference balanced output. From a zeroed position the quadcopter should hover in place with the balanced output. First we must find a way to remove any rotational acceleration ($\frac{d\mathbf{H}}{dt} = \mathbf{0}$).
+\begin{align}
+  kr\left(\omega_l^2-\omega_r^2\right) &= 0 \nonumber \\
+  kr\left(\omega_b^2-\omega_f^2\right) &= 0\nonumber \\
+  b\left(\omega_f^2-\omega_r^2 + \omega_b^2 - \omega_l^2\right) &= 0 \nonumber
+\end{align}
+In the above it can be seen with equal motor thrusts the torques on the quadcopter \emph{should} zero. Removing any rotational motion, zeroing the acceleration becomes
+\begin{equation}
+  4km\omega_i^2 -mg = 0 \nonumber
+\end{equation}
+Or
+\begin{equation}
+  \omega_i = \frac{1}{2}\sqrt{\frac{g}{k}}
+\end{equation}
 
 \section{Localization Node}
 \end{document}
