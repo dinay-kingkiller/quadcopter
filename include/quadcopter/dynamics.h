@@ -34,7 +34,21 @@
 
 namespace quadcopter
 {
-  State get_next_state(State s, double dt, Motor input);
+/**
+  * @brief Advances the quadcopter state by a timestep dt.
+  *
+  * This function performs a single integration step over SE(3) and SO(3) using
+  * the current state `s`, motor inputs `u`, and system parameters `p`.
+  * Small-angle approximations are used when angular velocity is small.
+  * Quaternion normalization is applied to maintain valid rotations.
+  *
+  * @param s Current state of the quadcopter.
+  * @param u Motor inputs (squared thrusts for front, right, left, back).
+  * @param p Quadcopter parameters (mass, gravity, force constants, etc.).
+  * @param dt Time step over which to integrate.
+  * @return State Next state of the quadcopter after dt.
+  */
+State step(const State& s, const Motor& u, const Params& p, double dt);
 }
 
 

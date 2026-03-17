@@ -27,31 +27,54 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+/**
+ * @file types.h
+ * @brief Basic data types for quadcopter state, motors, and parameters
+ */
+
 #ifndef QUADCOPTER_TYPES_H_
 #define QUADCOPTER_TYPES_H_
 
 namespace quadcopter
 {
+/** 3D vector. */
 struct Vector3
 {
   double x, y, z;
 };
+
+/** Quaternion. */
 struct Quaternion
 {
   double x, y, z, w;
 };
+
+/** Complete state of the quadcopter. */
 struct State
 {
-  Vector3 p;
-  Quaternion q;
-  Vector3 v;
-  Vector3 w;
+  Vector3 p;      ///< Position in inertial frame
+  Quaternion q;   ///< Rotation from robot frame to inertial frame
+  Vector3 v;      ///< Linear velocity in robot frame
+  Vector3 w;      ///< Angular velocity of robot relative to inertial frame, expressed in robot frame
 };
+
+/** Physical parameters of the quadcopter. */
+struct Params
+{
+  double mass;    ///< mass [kg]
+  double radius;  ///< distance to motor [m]
+  double gravity; ///< gravity [m/s^2]
+  double force;   ///< motor force coefficient
+  double torque;  ///< motor torque coefficient
+};
+
+/** Motor inputs. */
 struct Motor
 {
-  double front, right, left, back;
+  double front;
+  double right;
+  double left;
+  double back;
+};
 }
-}
-
-
 #endif // QUADCOPTER_TYPES_H_
