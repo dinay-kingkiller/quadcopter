@@ -10,8 +10,8 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
+  quad_msgs
   roscpp
-  rospy
 )
 
 ## System dependencies are found with CMake's conventions
@@ -103,7 +103,7 @@ generate_messages(DEPENDENCIES geometry_msgs)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES quadcopter
-  CATKIN_DEPENDS geometry_msgs message_generation roscpp rospy
+  CATKIN_DEPENDS geometry_msgs message_generation roscpp quad_msgs
 #  DEPENDS system_lib
 )
 

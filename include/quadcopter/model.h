@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2024, Dinay Kingkiller
+// Copyright (c) 2026, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -38,25 +38,10 @@
 
 #include "ros/ros.h"
 
-#include "geometry_msgs/Pose.h"
-#include "geometry_msgs/Quaternion.h"
-#include "geometry_msgs/Vector3.h"
-
-#include "quadcopter/Motor.h"
-#include "quadcopter/Sensor.h"
+#include "quadcopter/types.h"
 
 namespace quadcopter
 {
-
-/// \brief Provides a succinct way to pass the state to and from the ODE and solver
-struct State
-{
-  geometry_msgs::Vector3 p; /// Position in inertial frame
-  geometry_msgs::Vector3 v; /// Velocity in inertial frame
-  geometry_msgs::Quaternion q; /// Rotation from inertial frame
-  geometry_msgs::Vector3 w; /// Rotation from inertial frame in robot frame
-};
-
 /// \brief Models the physics of a quadcopter and provides sensor feedback.
 class Model
 {
@@ -66,8 +51,6 @@ public:
   void zero();
   /// \brief Set model parameters taken from ROS node_
   void reset_params();
-  /// \brief Returns the trajectory of the state and input arguments.
-  State get_trajectory(State state, Motor input) const;
   /// \brief Timer callback that updates the model and publishes the pose.
   void update(const ros::TimerEvent& e);
   /// \brief Sets the motor values to a new input.
@@ -81,22 +64,14 @@ private:
   ros::Publisher sensor_pub_;
   /// \brief publisher for current pose of the quadcopter
   ros::Publisher pose_pub_;
-  /// \brief mass of the quadcopter. Model assumes all mass is in the motors.
-  double mass_;
-  /// \brief length of each arm. Model assumes all mass is in the motors.
-  double radius_;
-  /// \brief graviational acceleration constant
-  double k_gravity_;
-  /// \brief force constant of motors
-  double k_force_;
-  /// \brief torque constant of motors
-  double k_torque_;
   /// \brief time the state was last updated
   ros::Time time_;
   /// \brief last updated state
   State state_;
   /// \brief last motor input given
   Motor input_;
+  /// \brief model parameters
+  Params params_;
   /// \brief Sensor variance/noise generation
   std::mt19937 rand_gen_;
   std::normal_distribution<double> accel_noise_;
@@ -104,10 +79,6 @@ private:
   /// \brief Sensor max values
   double gyro_scale_;
   double accel_scale_;
-  /// \brief Acceleration in the inertial frame for adding sensor noise.
-  geometry_msgs::Vector3 accel_;
-  /// \brief Gyro values in the robot frame?
-  geometry_msgs::Vector3 gyro_;
 };
 } //namespace quadcopter
 
