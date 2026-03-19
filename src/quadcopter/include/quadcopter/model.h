@@ -27,9 +27,8 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \brief A model to simulate quadcopter physics
-///
-/// Models the equations of motion, taking in motor inputs and sending out sensor outputs.
+/// \file model.h
+/// \brief Defines the quadcopter physics model, including motor input handling and sensor output.
 
 #ifndef QUADCOPTER_MODEL_H_
 #define QUADCOPTER_MODEL_H_
@@ -39,45 +38,85 @@
 #include "ros/ros.h"
 
 #include "quadcopter/types.h"
+#include "quad_msgs/Motor.h"
 
 namespace quadcopter
 {
 /// \brief Models the physics of a quadcopter and provides sensor feedback.
+/// 
+/// This class implements a simple physics model for a quadcopter, integrating motor inputs
+/// over time to produce position, orientation, and sensor outputs. It can be used for testing
+/// controllers and simulating flight in a ROS environment.
 class Model
 {
 public:
+  /// \brief Constructs a Model instance with a ROS node handle.
+  /// \param node A ROS node handle for publishers/subscribers.
   Model(ros::NodeHandle node);
-  /// \brief Places the quadcopter back at the origin and restarts the clock.
+
+  /// \brief Resets the quadcopter to the origin and zeroes its state.
+  ///
+  /// This method places the quadcopter at (0,0,0) with no linear or angular velocity.
   void zero();
-  /// \brief Set model parameters taken from ROS node_
+
+  /// \brief Loads or resets model parameters from the ROS parameter server.
+  ///
+  /// Reads parameters such as mass, gravity constant, force/torque constants, and sensor scales.
   void reset_params();
-  /// \brief Timer callback that updates the model and publishes the pose.
+
+  /// \brief Timer callback to update the physics model.
+  ///
+  /// Integrates motor inputs over the time step and updates the quadcopter's pose and sensor outputs.
+  /// \param e Timer event information from ROS (contains dt).
   void update(const ros::TimerEvent& e);
-  /// \brief Sets the motor values to a new input.
-  void move(Motor input);
-  /// \brief Measures and publishes the current state of the sensors.
-  void sense(const ros::TimerEvent& e);
+
+  /// \brief Updates the current motor inputs.
+  ///
+  /// Receives a ROS `quad_msgs::Motor` message and updates the internal motor state.
+  /// \param msg Pointer to the motor message received from a ROS topic.
+  void move(const quad_msgs::Motor::ConstPtr& msg);
+
+  /// \brief Measures and publishes the current sensor outputs.
+  ///
+  /// Uses internal state plus noise to simulate sensor readings.
+  /// Currently commented out; implement if sensor output is needed.
+  // void sense(const ros::TimerEvent& e);
+
 private:
-  /// \brief node instance for communicating with ROS
+  /// \brief ROS node handle used for publishers and subscribers.
   ros::NodeHandle node_;
-  /// \brief publisher for sensor messages
+
+  /// \brief Publisher for simulated sensor messages.
   ros::Publisher sensor_pub_;
-  /// \brief publisher for current pose of the quadcopter
+
+  /// \brief Publisher for the current quadcopter pose.
   ros::Publisher pose_pub_;
-  /// \brief time the state was last updated
+
+  /// \brief Time the state was last updated.
   ros::Time time_;
-  /// \brief last updated state
+
+  /// \brief Current state of the quadcopter (position, orientation, linear and angular velocities).
   State state_;
-  /// \brief last motor input given
+
+  /// \brief Last motor inputs applied to the quadcopter.
   Motor input_;
-  /// \brief model parameters
+
+  /// \brief Physical model parameters (mass, gravity, force/torque constants, etc.).
   Params params_;
-  /// \brief Sensor variance/noise generation
+
+  /// \brief Random number generator for sensor noise simulation.
   std::mt19937 rand_gen_;
+
+  /// \brief Gaussian noise distribution for accelerometer readings.
   std::normal_distribution<double> accel_noise_;
+
+  /// \brief Gaussian noise distribution for gyroscope readings.
   std::normal_distribution<double> gyro_noise_;
-  /// \brief Sensor max values
+
+  /// \brief Maximum scale for gyroscope readings.
   double gyro_scale_;
+
+  /// \brief Maximum scale for accelerometer readings.
   double accel_scale_;
 };
 } //namespace quadcopter

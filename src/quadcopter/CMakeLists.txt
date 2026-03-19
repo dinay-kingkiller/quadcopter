@@ -48,12 +48,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Motor.msg
-  Sensor.msg
-  ICM20948.msg
-)
+# add_message_files(
+#   FILES
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -121,6 +118,7 @@ include_directories(
 ## Declare a C++ library
 add_library(model src/model.cpp)
 add_library(controller src/controller.cpp)
+add_library(conversions src/conversions.cpp)
 add_library(dynamics src/dynamics.cpp)
 
 ## Add cmake target dependencies of the library
@@ -149,7 +147,7 @@ add_dependencies(${PROJECT_NAME}_model_node ${${PROJECT_NAME}_EXPORTED_TARGETS} 
 add_dependencies(${PROJECT_NAME}_const_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_model_node model ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_model_node model dynamics conversions ${catkin_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_const_node controller ${catkin_LIBRARIES})
 
 #############

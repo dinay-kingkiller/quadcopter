@@ -32,7 +32,6 @@
 #include "ros/ros.h"
 
 #include "quadcopter/controller.h"
-#include "quadcopter/Motor.h"
 
 
 int main(int argc, char **argv)

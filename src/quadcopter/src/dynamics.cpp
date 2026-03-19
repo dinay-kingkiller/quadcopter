@@ -107,7 +107,7 @@ State step(const State& s, const Motor& u, const Params& p, double dt)
   Vector3 wxv = cross(s.w, s.v);
   v_dot.x = -2.0*(s.q.x*s.q.z+s.q.y*s.q.w)*p.gravity-wxv.x;
   v_dot.y = -2.0*(s.q.x*s.q.w+s.q.y*s.q.z)*p.gravity-wxv.y;
-  v_dot.z = (s.q.w*s.q.w-s.q.x*s.q.x-s.q.y*s.q.y+s.q.z*s.q.z)*p.gravity+T-wxv.z;
+  v_dot.z = (s.q.x*s.q.x+s.q.y*s.q.y-s.q.z*s.q.z-s.q.w*s.q.w)*p.gravity+T-wxv.z;
 
   // Update twist
   n.w.x = s.w.x + dt * w_dot.x;

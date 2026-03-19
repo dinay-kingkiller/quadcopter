@@ -37,6 +37,10 @@
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Pose.h"
 
+#include "quadcopter/dynamics.h"
+#include "quadcopter/types.h"
+#include "quadcopter/conversions.h"
+
 #include "quad_msgs/Motor.h"
 #include "quad_msgs/Sensor.h"
 #include "quad_msgs/ICM20948.h"
@@ -52,10 +56,11 @@ Model::Model(ros::NodeHandle node)
   pose_pub_ = node.advertise<geometry_msgs::Pose>("pose", 1000);
   sensor_pub_ = node.advertise<quad_msgs::ICM20948>("ICM20948", 1000);
 }
+/*
 void Model::sense(const ros::TimerEvent& e)
 {
-  Sensor sensor_actual;
-  ICM20948 sensor_raw;
+  quad_msgs::Sensor sensor_actual;
+  quad_msgs::ICM20948 sensor_raw;
 
   sensor_actual.accelerometer = accel_;
   sensor_actual.gyroscope = gyro_;
@@ -92,6 +97,7 @@ void Model::sense(const ros::TimerEvent& e)
 
   sensor_pub_.publish(sensor_raw);
 }
+*/
 void Model::reset_params()
 {
   // Physical Parameters
@@ -124,7 +130,10 @@ void Model::zero()
   state_.w = {0.0, 0.0, 0.0};
   input_ = {0.0, 0.0, 0.0, 0.0};
 }
-void Model::move(Motor input) {input_ = input;}
+  void Model::move(const quad_msgs::Motor::ConstPtr& msg)
+{
+  input_ = toStruct(*msg);
+}
 
 void Model::update(const ros::TimerEvent& e)
 {
@@ -134,11 +143,7 @@ void Model::update(const ros::TimerEvent& e)
   time_ = this_time;
 
   // Publish new pose.
-  geometry_msgs::Pose new_pose;
-  new_pose.position.x = state_.p.x;
-  new_pose.position.y = state_.p.y;
-  new_pose.position.z = state_.p.z;
-  new_pose.orientation = state_.q;
+  geometry_msgs::Pose new_pose = toMsg(state_);
   pose_pub_.publish(new_pose);
 }
 } // namespace quadcopter

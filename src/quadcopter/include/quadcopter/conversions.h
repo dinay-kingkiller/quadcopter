@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2023, Dinay Kingkiller
+// Copyright (c) 2026, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -27,37 +27,49 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef QUADCOPTER_CONTROLLER_H_
-#define QUADCOPTER_CONTROLLER_H_
+#ifndef CONVERSIONS_H_
+#define CONVERSIONS_H_
 
-#include <string>
-
-#include "ros/ros.h"
+#include "geometry_msgs/Pose.h"
 
 #include "quad_msgs/Motor.h"
+#include "quadcopter/types.h"
 
 namespace quadcopter
 {
-/// \brief Provides a constant input to the motor controllers.
-///
-/// This class is useful for testing everything except controllers. Its built for a control
-/// node that takes no feedback, just keeps pushing out the same value.
-class ConstantController
-{
-public:
-  ConstantController(ros::NodeHandle node);
-  /// \brief timer callback that publishes to the motor input topic.
-  void publish_input(const ros::TimerEvent& e);
-private:
-  /// \brief ROS node that represents the controller.
-  ros::NodeHandle node_;
-  /// \brief publisher object for motor input.
-  ros::Publisher motor_pub_;
-  /// \brief message for publishing to motor input.
-  quad_msgs::Motor motor_msg_;
-  /// \brief sets the motor message based on the config attached to the node.
-  void set_msg();
-};
+/**
+ * @brief Convert a ROS Motor message to the internal quadcopter::Motor struct.
+ *
+ * This function copies the fields from a ROS Motor message into
+ * the internal Motor representation used by the quadcopter code.
+ *
+ * @param msg The ROS Motor message to convert.
+ * @return Motor The internal Motor struct populated from the message.
+ */
+Motor toStruct(const quad_msgs::Motor& msg);
+
+/**
+ * @brief Convert the internal quadcopter::Motor struct to a ROS Motor message.
+ *
+ * This function copies the fields from the internal Motor struct
+ * into a ROS Motor message for publishing.
+ *
+ * @param m The internal Motor struct to convert.
+ * @return quad_msgs::Motor The ROS message populated from the struct.
+ */
+quad_msgs::Motor toMsg(const Motor& m);
+
+/**
+ * @brief Convert the internal quadcopter::State struct to a ROS Pose message.
+ *
+ * This function maps position and orientation information from the
+ * internal State representation to a geometry_msgs::Pose message.
+ *
+ * @param s The internal State struct to convert.
+ * @return geometry_msgs::Pose The ROS Pose message representing the state.
+ */
+geometry_msgs::Pose toMsg(const State& s);
+
 } // namespace quadcopter
 
-#endif // QUADCOPTER_CONTROLLER_H_
+#endif // CONVERSIONS_H_

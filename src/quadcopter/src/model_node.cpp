@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2024, Dinay Kingkiller
+// Copyright (c) 2026, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -35,9 +35,6 @@
 
 #include "quadcopter/model.h"
 
-#include "quadcopter/Sensor.h"
-#include "quadcopter/Motor.h"
-
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "model");
@@ -45,15 +42,17 @@ int main(int argc, char **argv)
 
   quadcopter::Model drone(nh);
   
-  ros::Subscriber motor_sub = nh.subscribe<quadcopter::Motor>(
+  ros::Subscriber motor_sub = nh.subscribe<quad_msgs::Motor>(
     "motor_input",
     1000,
     &quadcopter::Model::move,
     &drone);
+  /*
   ros::Timer sensor_timer = nh.createTimer(
     ros::Rate(1000),
     &quadcopter::Model::sense,
     &drone);
+  */
   ros::Duration(1).sleep(); // Wait until thrust is updated.
   ros::Timer update_timer = nh.createTimer(
     ros::Rate(1000),
