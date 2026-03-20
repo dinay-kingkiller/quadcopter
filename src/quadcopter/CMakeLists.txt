@@ -9,7 +9,6 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  message_generation
   quad_msgs
   roscpp
 )
@@ -66,7 +65,7 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(DEPENDENCIES geometry_msgs)
+# generate_messages(DEPENDENCIES geometry_msgs)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -100,7 +99,7 @@ generate_messages(DEPENDENCIES geometry_msgs)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES quadcopter
-  CATKIN_DEPENDS geometry_msgs message_generation roscpp quad_msgs
+  CATKIN_DEPENDS geometry_msgs roscpp quad_msgs
 #  DEPENDS system_lib
 )
 

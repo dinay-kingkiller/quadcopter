@@ -9,14 +9,14 @@
   <author email="dinay.kingkiller@gmail.com">dinay-kingkiller</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>rospy</build_depend>
+
   <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <depend>quad_msgs</depend>
+
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>message_generation</exec_depend>
   <exec_depend>roscpp</exec_depend>
+
+  <depend>quad_msgs</depend>
 </package>

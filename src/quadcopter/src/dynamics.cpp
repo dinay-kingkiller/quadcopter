@@ -29,6 +29,7 @@
 
 #include "quadcopter/dynamics.h"
 
+#include <cassert>
 #include <cmath>
 
 namespace quadcopter
