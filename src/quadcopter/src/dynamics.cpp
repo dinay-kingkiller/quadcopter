@@ -71,7 +71,6 @@ Quaternion normalize(const Quaternion& q)
 
   // Guard clause for quaternions that somehow reduce in norm.
   assert(norm2 > 1e-12 && "Quaternion norm too small in normalize()");
-  if (norm2 < 1e-12) {return {0.0, 0.0, 0.0, 1.0};}
 
   double inv_bar = 1.0 / sqrt(norm2);
   Quaternion r;
