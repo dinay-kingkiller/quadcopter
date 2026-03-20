@@ -66,7 +66,13 @@ double norm(const Vector3& v)
 }
 Quaternion normalize(const Quaternion& q)
 {
-  double inv_bar = 1.0 / sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+  double norm2 = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
+
+  // Guard clause for quaternions that somehow reduce in norm.
+  assert(norm2 > 1e-12 && "Quaternion norm too small in normalize()");
+  if (norm2 < 1e-12) {return {0.0, 0.0, 0.0, 1.0};}
+
+  double inv_bar = 1.0 / sqrt(norm2);
   Quaternion r;
   r.x = q.x*inv_bar;
   r.y = q.y*inv_bar;
@@ -107,7 +113,7 @@ State step(const State& s, const Motor& u, const Params& p, double dt)
   Vector3 wxv = cross(s.w, s.v);
   v_dot.x = -2.0*(s.q.x*s.q.z+s.q.y*s.q.w)*p.gravity-wxv.x;
   v_dot.y = -2.0*(s.q.x*s.q.w+s.q.y*s.q.z)*p.gravity-wxv.y;
-  v_dot.z = (s.q.x*s.q.x+s.q.y*s.q.y-s.q.z*s.q.z-s.q.w*s.q.w)*p.gravity+T-wxv.z;
+  v_dot.z = (s.q.x*s.q.x+s.q.y*s.q.y-s.q.z*s.q.z-s.q.w*s.q.w)*p.gravity+T/p.mass-wxv.z;
 
   // Update twist
   n.w.x = s.w.x + dt * w_dot.x;
@@ -119,26 +125,26 @@ State step(const State& s, const Motor& u, const Params& p, double dt)
 
   double w_bar = norm(n.w);
   double theta = w_bar * dt;
-  double inv_w = 1.0 / w_bar;
-  double inv_w2 = inv_w*inv_w;
-  double inv_w3 = inv_w2*inv_w;
 
   // Update position over SE(3)
   wxv = cross(n.w, n.v);
   Vector3 wxwxv = cross(n.w, wxv);
   Vector3 v_hat;
-  double c_coef, s_coef;
+  double c_coef, s_coef, inv_w;
   if (theta < 1e-3)
-    {
-      // First-order Taylor expansion for small angles
-      c_coef = 0.5*dt*dt;
-      s_coef = dt*dt*dt / 6.0;
-    }
+  {
+    // First-order Taylor expansion for small angles
+    c_coef = 0.5*dt*dt;
+    s_coef = dt*dt*dt / 6.0;
+  }
   else
-    {
-      c_coef = inv_w2 * (1-cos(theta));
-      s_coef = inv_w3 * (theta-sin(theta));
-    }
+  {
+    inv_w = 1.0 / w_bar;
+    double inv_w2 = inv_w*inv_w;
+    double inv_w3 = inv_w2*inv_w;
+    c_coef = inv_w2 * (1-cos(theta));
+    s_coef = inv_w3 * (theta-sin(theta));
+  }
   v_hat.x = n.v.x + c_coef*wxv.x + s_coef*wxwxv.x;
   v_hat.y = n.v.y + c_coef*wxv.y + s_coef*wxwxv.y;
   v_hat.z = n.v.z + c_coef*wxv.z + s_coef*wxwxv.z;
@@ -149,16 +155,16 @@ State step(const State& s, const Motor& u, const Params& p, double dt)
 
   // Update quaternion over SO(3)
   if (theta < 1e-3)
-    {
-      // First-order Taylor expansion for small angles
-      c_coef = 1 - 0.125*theta*theta;
-      s_coef = dt * (0.5 - theta*theta/48.0);
-    }
+  {
+    // First-order Taylor expansion for small angles
+    c_coef = 1 - 0.125*theta*theta;
+    s_coef = dt * (0.5 - theta*theta/48.0);
+  }
   else
-    {
-      c_coef = cos(0.5*theta);
-      s_coef = inv_w * sin(0.5*theta);
-    }
+  {
+    c_coef = cos(0.5*theta);
+    s_coef = inv_w * sin(0.5*theta);
+  }
   q_dot.w = c_coef;
   q_dot.x = s_coef * n.w.x;
   q_dot.y = s_coef * n.w.y;

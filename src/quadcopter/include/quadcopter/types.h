@@ -40,13 +40,13 @@ namespace quadcopter
 /** 3D vector. */
 struct Vector3
 {
-  double x, y, z;
+  double x=0.0, y=0.0, z=0.0;
 };
 
 /** Quaternion. */
 struct Quaternion
 {
-  double x, y, z, w;
+  double x=0.0, y=0.0, z=0.0, w=1.0;
 };
 
 /** Complete state of the quadcopter. */
@@ -71,10 +71,10 @@ struct Params
 /** Motor inputs. */
 struct Motor
 {
-  double front;
-  double right;
-  double left;
-  double back;
+  double front = 0.0;
+  double right = 0.0;
+  double left = 0.0;
+  double back = 0.0;
 };
 }
 #endif // QUADCOPTER_TYPES_H_
