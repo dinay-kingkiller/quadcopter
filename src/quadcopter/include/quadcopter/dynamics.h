@@ -43,7 +43,7 @@ namespace quadcopter
   * Quaternion normalization is applied to maintain valid rotations.
   *
   * @param s Current state of the quadcopter.
-  * @param u Motor inputs (squared thrusts for front, right, left, back).
+  * @param u Motor inputs.
   * @param p Quadcopter parameters (mass, gravity, force constants, etc.).
   * @param dt Time step over which to integrate.
   * @return State Next state of the quadcopter after dt.
