@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2023, Dinay Kingkiller
+// Copyright (c) 2026, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -33,8 +33,6 @@
 
 #include "ros/ros.h"
 
-#include "quadcopter/Motor.h"
-
 namespace quadcopter
 {
 
@@ -42,7 +40,7 @@ ConstantController::ConstantController(ros::NodeHandle node)
 : node_(node)
 {
   set_msg();
-  motor_pub_ = node.advertise<quadcopter::Motor>("motor_input", 1000);
+  motor_pub_ = node.advertise<quad_msgs::Motor>("motor_input", 1000);
 }
 
 void ConstantController::publish_input(const ros::TimerEvent& e)
@@ -52,13 +50,11 @@ void ConstantController::publish_input(const ros::TimerEvent& e)
 
 void ConstantController::set_msg()
 {
-  float mass, k_gravity, k_force, k_torque;
-  node_.getParam("Mass", mass);
+  double k_gravity, k_force;
   node_.getParam("GAccel", k_gravity);
   node_.getParam("kForce", k_force);
-  node_.getParam("kTorque", k_torque);
-  ROS_ASSERT_MSG(k_torque > 0.001, "Torque Constant set too low.");
-  float motor_balance = 0.5 * sqrt(k_gravity/k_force);
+  ROS_ASSERT_MSG(k_force > 0.001, "Force Constant set too low.");
+  double motor_balance = 0.5 * sqrt(k_gravity/k_force);
 
   std::string motor_config;
   node_.getParam("motor_config", motor_config);

@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2023, Dinay Kingkiller
+// Copyright (c) 2026, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -27,37 +27,54 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef QUADCOPTER_CONTROLLER_H_
-#define QUADCOPTER_CONTROLLER_H_
+/**
+ * @file types.h
+ * @brief Basic data types for quadcopter state, motors, and parameters
+ */
 
-#include <string>
-
-#include "ros/ros.h"
-
-#include "quadcopter/Motor.h"
+#ifndef QUADCOPTER_TYPES_H_
+#define QUADCOPTER_TYPES_H_
 
 namespace quadcopter
 {
-/// \brief Provides a constant input to the motor controllers.
-///
-/// This class is useful for testing everything except controllers. Its built for a control
-/// node that takes no feedback, just keeps pushing out the same value.
-class ConstantController
+/** 3D vector. */
+struct Vector3
 {
-public:
-  ConstantController(ros::NodeHandle node);
-  /// \brief timer callback that publishes to the motor input topic.
-  void publish_input(const ros::TimerEvent& e);
-private:
-  /// \brief ROS node that represents the controller.
-  ros::NodeHandle node_;
-  /// \brief publisher object for motor input.
-  ros::Publisher motor_pub_;
-  /// \brief message for publishing to motor input.
-  quadcopter::Motor motor_msg_;
-  /// \brief sets the motor message based on the config attached to the node.
-  void set_msg();
+  double x, y, z;
 };
-} // namespace quadcopter
 
-#endif // QUADCOPTER_CONTROLLER_H_
+/** Quaternion. */
+struct Quaternion
+{
+  double x, y, z, w;
+};
+
+/** Complete state of the quadcopter. */
+struct State
+{
+  Vector3 p;      ///< Position in inertial frame
+  Quaternion q;   ///< Rotation from robot frame to inertial frame
+  Vector3 v;      ///< Linear velocity in robot frame
+  Vector3 w;      ///< Angular velocity of robot relative to inertial frame, expressed in robot frame
+};
+
+/** Physical parameters of the quadcopter. */
+struct Params
+{
+  double mass;    ///< mass [kg]
+  double radius;  ///< distance to motor [m]
+  double gravity; ///< gravity [m/s^2]
+  double force;   ///< motor force coefficient
+  double torque;  ///< motor torque coefficient
+};
+
+/** Motor inputs. */
+struct Motor
+{
+  double front;
+  double right;
+  double left;
+  double back;
+};
+}
+#endif // QUADCOPTER_TYPES_H_

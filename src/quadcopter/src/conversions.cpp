@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2024, Dinay Kingkiller
+// Copyright (c) 2026, Dinay Kingkiller
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -27,39 +27,38 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file model_node.cpp
-/// \brief A ROS node that models a quadcopter.
+#include "quadcopter/conversions.h"
 
-
-#include "ros/ros.h"
-
-#include "quadcopter/model.h"
-
-#include "quadcopter/Sensor.h"
-#include "quadcopter/Motor.h"
-
-int main(int argc, char **argv)
+namespace quadcopter
 {
-  ros::init(argc, argv, "model");
-  ros::NodeHandle nh;
-
-  quadcopter::Model drone(nh);
-  
-  ros::Subscriber motor_sub = nh.subscribe<quadcopter::Motor>(
-    "motor_input",
-    1000,
-    &quadcopter::Model::move,
-    &drone);
-  ros::Timer sensor_timer = nh.createTimer(
-    ros::Rate(1000),
-    &quadcopter::Model::sense,
-    &drone);
-  ros::Duration(1).sleep(); // Wait until thrust is updated.
-  ros::Timer update_timer = nh.createTimer(
-    ros::Rate(1000),
-    &quadcopter::Model::update,
-    &drone);
-
-  ros::spin();
-  return 0;
+Motor toStruct(const quad_msgs::Motor& msg)
+{
+  Motor m;
+  m.front = msg.front;
+  m.back = msg.back;
+  m.right = msg.right;
+  m.left = msg.left;
+  return m;
+}
+quad_msgs::Motor toMsg(const Motor& m)
+{
+  quad_msgs::Motor msg;
+  msg.front = m.front;
+  msg.back = m.back;
+  msg.right = m.right;
+  msg.left = m.left;
+  return msg;
+}
+geometry_msgs::Pose toMsg(const State& s)
+{
+  geometry_msgs::Pose msg;
+  msg.position.x = s.p.x;
+  msg.position.y = s.p.y;
+  msg.position.z = s.p.z;
+  msg.orientation.x = s.q.x;
+  msg.orientation.y = s.q.y;
+  msg.orientation.z = s.q.z;
+  msg.orientation.w = s.q.w;
+  return msg;
+}
 }
